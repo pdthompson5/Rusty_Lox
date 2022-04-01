@@ -38,6 +38,7 @@ fn run_prompt(){
             Ok(_a)=> (), 
             Err(_e) => break,
         }
+         
 
         if line.eq("\n"){
             break;

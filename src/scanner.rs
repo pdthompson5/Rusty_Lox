@@ -1,6 +1,6 @@
 
 use crate::{token::TokenType::*, token::{Token, TokenType}, lox_type::{LoxValue}};
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::HashMap};
 pub struct Scanner{
     source: String,
     tokens: Vec<Token>,
@@ -69,6 +69,7 @@ impl Scanner{
 
     fn scan_token(&mut self){
         let c = self.advance();
+        println!("{}", c);
         match c{
             '(' =>  self.add_token_null(LEFT_PAREN),
             ')' =>  self.add_token_null(RIGHT_PAREN),
@@ -112,7 +113,7 @@ impl Scanner{
             '\r' => (),
             '\t' => (),
 
-            '\n' => {self.current += 1;},
+            '\n' => {self.line += 1;},
             
             '"' => self.add_string(),
             
@@ -143,8 +144,9 @@ impl Scanner{
     }
 
     fn advance(&mut self) -> char{
+        let c = self.get_current_char();
         self.current = self.current + 1;
-        self.get_current_char()
+        c
     }
 
     fn add_token_null(&mut self, kind : TokenType){

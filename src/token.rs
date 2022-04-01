@@ -1,5 +1,6 @@
-use crate::lox_type::LoxValue;
+#![allow(non_camel_case_types)]
 
+use crate::lox_type::LoxValue;
 
 
 #[derive(Debug, Clone, Copy)]
@@ -21,9 +22,7 @@ pub enum TokenType {
     AND, CLASS, ELSE, FALSE, FUN, FOR, IF, NIL, OR,
     PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE,
 
-    EOF,
-
-    NO_MATCH, IGNORE
+    EOF
 }
 
 

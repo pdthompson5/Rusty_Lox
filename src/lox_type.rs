@@ -6,13 +6,11 @@ pub enum LoxValue{
     Number(f64),
     String(String),
     Nil,
-
-
 }
 
 pub fn stringify_double(val: &f64) -> String{  
     let string = format!("{}", val);
-    if string[string.len()-2 .. string.len()-1].eq(".0") {
+    if string.len() > 2 && string[string.len()-2 .. string.len()-1].eq(".0") {
         return string[.. string.len()-2].to_string();
     } 
     return string;
