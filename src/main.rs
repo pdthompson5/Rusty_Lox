@@ -4,6 +4,9 @@ use std::io::{self, BufRead, Write};
 mod scanner;
 mod token;
 mod lox_type;
+mod expr;
+mod interpreter;
+mod ast_printer;
 
 use crate::scanner::Scanner;
 
