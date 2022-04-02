@@ -69,7 +69,6 @@ impl Scanner{
 
     fn scan_token(&mut self){
         let c = self.advance();
-        println!("{}", c);
         match c{
             '(' =>  self.add_token_null(LEFT_PAREN),
             ')' =>  self.add_token_null(RIGHT_PAREN),

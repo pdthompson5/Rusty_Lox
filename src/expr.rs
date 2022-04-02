@@ -1,11 +1,11 @@
 use crate::token::Token;
 use crate::lox_type::LoxValue;
 //Exprs need to be boxed to avoid reccursive enums which Rust does not allow
-pub enum Expr {
-    Binary{left: Box<Expr>, operator: Token, right: Box<Expr>}, 
-    Grouping{expression: Box<Expr>},
+pub enum Expr<'a> {
+    Binary{left: Box<Expr<'a>>, operator: &'a Token, right: Box<Expr<'a>>}, 
+    Grouping{expression: Box<Expr<'a>>},
     Literal{value: LoxValue},
-    Unary{operator: Token, right: Box<Expr>},
+    Unary{operator: &'a Token, right: Box<Expr<'a>>},
 }
 
 pub trait Visitor<T> {
@@ -15,7 +15,7 @@ pub trait Visitor<T> {
     fn visit_unary_expr(&mut self, operator : &Token, right : &Box<Expr>) -> T;
 }
 
-impl Expr{
+impl<'a> Expr<'a>{
     pub fn accept<T>(&self, visitor: &mut impl Visitor<T>) -> T{
         match self{
             Self::Binary { left, operator, right} => visitor.visit_binary_expr(left, operator, right),

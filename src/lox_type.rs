@@ -1,6 +1,5 @@
 use std::fmt;
-
-
+#[derive(Clone)]
 pub enum LoxValue{
     Boolean(bool),
     Number(f64),
@@ -20,10 +19,14 @@ impl fmt::Display for LoxValue{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
         match self {
             Self::Boolean(val) => write!(f, "{:?}", val),
-            Self::Number(val) => write!(f, "{:?}", stringify_double(val)),
-            Self::String(val) => write!(f, "{:?}", val),
+            Self::Number(val) => write!(f, "{}", stringify_double(val)),
+            Self::String(val) => write!(f, "{}", val),
             Self::Nil => write!(f, "nil"),
         }           
     }
 }
+
+
+
+
 
