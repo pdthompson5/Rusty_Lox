@@ -1,11 +1,11 @@
 use std::fmt;
-#[derive(Clone, PartialEq)]
+use crate::token::Token;
+#[derive(Clone, PartialEq, Debug)]
 pub enum LoxValue{
     Boolean(bool),
     Number(f64),
-    String(String),
+    LoxString(String),
     Nil,
-    Error,
 }
 
 pub fn stringify_double(val: &f64) -> String{  
@@ -21,9 +21,8 @@ impl fmt::Display for LoxValue{
         match self {
             Self::Boolean(val) => write!(f, "{:?}", val),
             Self::Number(val) => write!(f, "{}", stringify_double(val)),
-            Self::String(val) => write!(f, "{}", val),
+            Self::LoxString(val) => write!(f, "{}", val),
             Self::Nil => write!(f, "nil"),
-            Self::Error => write!(f, "ERROR")
         }           
     }
 }
@@ -36,6 +35,7 @@ impl LoxValue{
             _ => true
         }
     }
+
 }
 
 

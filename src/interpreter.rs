@@ -2,119 +2,127 @@ use crate::expr::Expr;
 use crate::expr::Visitor;
 use crate::lox_type::LoxValue::{self, *};
 use crate::token::{Token, TokenType::*};
-
+//Current status: Should be ready to hook up
 
 struct Interpreter {
 
 }
 
 impl Interpreter{
-    fn evaluate(&mut self, expr: &Box<Expr>) -> LoxValue{
+
+
+    fn evaluate(&mut self, expr: &Box<Expr>) -> Result<LoxValue, String> {
         expr.accept(self)
     }
 }
 
+fn token_error_string(token: &Token, message: String) -> String{
+    ["at '", token.lexeme.as_str(), "'", message.as_str()].concat()
+}
+
+fn invalid_operand_number(operator: &Token) -> String{
+    token_error_string(operator, "Operand must be a number.".to_string())
+}
 
 
+impl Visitor<Result<LoxValue, String>> for Interpreter{
 
-impl Visitor<LoxValue> for Interpreter{
-
-    fn visit_binary_expr(&mut self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> LoxValue{
-        let left_eval = self.evaluate(left);
-        let right_eval = self.evaluate(right);
+    fn visit_binary_expr(&mut self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> Result<LoxValue, String>{
+        let left_eval = self.evaluate(left)?;
+        let right_eval = self.evaluate(right)?;
 
         match operator.kind{
             PLUS => match left_eval {
                 Number(left_val) => match right_eval{
-                    Number(right_val) => Number(left_val + right_val),
-                    _ => Error
+                    Number(right_val) => Ok(Number(left_val + right_val)),
+                    _ => Err(token_error_string(operator, "Operand types do not match".to_string()))
                 },
-                String(left_val) => match right_eval{
-                    String(right_val) => String([left_val.as_str(), right_val.as_str()].concat().to_string()),
-                    _ => Error
+                LoxString(left_val) => match right_eval{
+                    LoxString(right_val) => Ok(LoxString([left_val.as_str(), right_val.as_str()].concat().to_string())),
+                    _ => Err(token_error_string(operator, "Operand types do not match".to_string()))
                 },
-                _ => Error
+                _ => Err(token_error_string(operator, "Invalid operands. Operands must be numbers or Strings".to_string()))
             },
 
             MINUS => match left_eval {
                 Number(left_val) => match right_eval{
-                    Number(right_val) => Number(left_val - right_val),
-                    _ => Error
+                    Number(right_val) => Ok(Number(left_val - right_val)),
+                    _ => Err(invalid_operand_number(operator))
                 },
-                _ => Error
+                _ => Err(invalid_operand_number(operator))
             },
 
             STAR => match left_eval {
                 Number(left_val) => match right_eval{
-                    Number(right_val) => Number(left_val * right_val),
-                    _ => Error
+                    Number(right_val) => Ok(Number(left_val * right_val)),
+                    _ => Err(invalid_operand_number(operator))
                 },
-                _ => Error
+                _ => Err(invalid_operand_number(operator))
             },
 
             SLASH => match left_eval {
                 Number(left_val) => match right_eval{
-                    Number(right_val) => Number(left_val / right_val),
-                    _ => Error
+                    Number(right_val) => Ok(Number(left_val / right_val)),
+                    _ => Err(invalid_operand_number(operator))
                 },
-                _ => Error
+                _ => Err(invalid_operand_number(operator))
             },
             //Todo: Determine floating point comparision in rust -> I think it is good 
             GREATER => match left_eval {
                 Number(left_val) => match right_eval{
-                    Number(right_val) => Boolean(left_val > right_val),
-                    _ => Error
+                    Number(right_val) => Ok(Boolean(left_val > right_val)),
+                    _ => Err(invalid_operand_number(operator))
                 },
-                _ => Error
+                _ => Err(invalid_operand_number(operator))
             },
 
             GREATER_EQUAL => match left_eval{
                 Number(left_val) => match right_eval{
-                    Number(right_val) => Boolean(left_val > right_val || left_val == right_val),
-                    _ => Error
+                    Number(right_val) => Ok(Boolean(left_val > right_val || left_val == right_val)),
+                    _ => Err(invalid_operand_number(operator))
                 },
-                _ => Error
+                _ => Err(invalid_operand_number(operator))
             },
             LESS => match left_eval{
                 Number(left_val) => match right_eval{
-                    Number(right_val) => Boolean(left_val < right_val),
-                    _ => Error
+                    Number(right_val) => Ok(Boolean(left_val < right_val)),
+                    _ => Err(invalid_operand_number(operator))
                 },
-                _ => Error
+                _ => Err(invalid_operand_number(operator))
             },
             LESS_EQUAL =>match left_eval{
                 Number(left_val) => match right_eval{
-                    Number(right_val) => Boolean(left_val < right_val || left_val == right_val),
-                    _ => Error
+                    Number(right_val) => Ok(Boolean(left_val < right_val || left_val == right_val)),
+                    _ => Err(invalid_operand_number(operator))
                 },
-                _ => Error
+                _ => Err(invalid_operand_number(operator))
             },
 
             //LoxValue implements PartialEq so simple equality comparisons work 
-            EQUAL_EQUAL => Boolean(left_eval == right_eval),
-            BANG_EQUAL => Boolean(left_eval != right_eval),
-            _ => Error
+            EQUAL_EQUAL => Ok(Boolean(left_eval == right_eval)),
+            BANG_EQUAL => Ok(Boolean(left_eval != right_eval)),
+            _ => Err(token_error_string(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
         }
     }
 
-    fn visit_grouping_expr(&mut self, expression : &Box<Expr>) -> LoxValue{
+    fn visit_grouping_expr(&mut self, expression : &Box<Expr>) -> Result<LoxValue, String>{
         self.evaluate(expression)
     }
 
-    fn visit_literal_expr(&mut self, value : &LoxValue) -> LoxValue{
-        value.clone()
+    fn visit_literal_expr(&mut self, value : &LoxValue) -> Result<LoxValue, String>{
+        Ok(value.clone())
     }
 
-    fn visit_unary_expr(&mut self, operator : &Token, expression : &Box<Expr>) -> LoxValue{
-        let right = self.evaluate(expression);
+    fn visit_unary_expr(&mut self, operator : &Token, expression : &Box<Expr>) -> Result<LoxValue, String>{
+        let right = self.evaluate(expression)?;
 
         match operator.kind {
             MINUS => match right{
-                Number(val) => Number(-val),
-                _ => Error
+                Number(val) => Ok(Number(-val)),
+                _ => Err(invalid_operand_number(operator))
             }
-            BANG => Boolean(right.is_truthy()),
-            _ => Error
+            BANG => Ok(Boolean(right.is_truthy())),
+            _ => Err(token_error_string(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
         }
     }
 }

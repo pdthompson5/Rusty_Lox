@@ -203,7 +203,7 @@ impl Scanner{
         self.advance();
 
         let value = self.source[self.start+1 .. self.current-1].to_string();
-        self.add_token(STRING, LoxValue::String(value));
+        self.add_token(STRING, LoxValue::LoxString(value));
     }
 
     fn add_number(&mut self){
