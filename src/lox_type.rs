@@ -1,10 +1,11 @@
 use std::fmt;
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum LoxValue{
     Boolean(bool),
     Number(f64),
     String(String),
     Nil,
+    Error,
 }
 
 pub fn stringify_double(val: &f64) -> String{  
@@ -22,7 +23,18 @@ impl fmt::Display for LoxValue{
             Self::Number(val) => write!(f, "{}", stringify_double(val)),
             Self::String(val) => write!(f, "{}", val),
             Self::Nil => write!(f, "nil"),
+            Self::Error => write!(f, "ERROR")
         }           
+    }
+}
+
+impl LoxValue{
+    pub fn is_truthy(&self) -> bool{
+        match self{
+            Self::Boolean(val) => *val,
+            Self::Nil =>  false,
+            _ => true
+        }
     }
 }
 

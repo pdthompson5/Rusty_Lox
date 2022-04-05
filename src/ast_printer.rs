@@ -26,16 +26,16 @@ impl AstPrinter{
 
 impl Visitor<String> for AstPrinter{
     fn visit_binary_expr(&mut self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> String{
-        self.parathesize(&operator.lexeme, &vec![left, right])
+        self.parathesize(&operator.lexeme, &vec![&left, &right])
     }
     fn visit_grouping_expr(&mut self, expression : &Box<Expr>) -> String{
-        self.parathesize(&"group".to_string(), &vec![expression])
+        self.parathesize(&"group".to_string(), &vec![&expression])
     }
     fn visit_literal_expr(&mut self, value : &LoxValue) -> String{
         value.to_string()
     }
     fn visit_unary_expr(&mut self, operator : &Token, expression : &Box<Expr>) -> String{
-        self.parathesize(&operator.lexeme, &vec![expression])
+        self.parathesize(&operator.lexeme, &vec![&expression])
     }
 }
 
