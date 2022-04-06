@@ -1,0 +1,40 @@
+//print
+print "Hello Lox";
+
+//literals
+true;
+false;
+1234;
+12.24;
+"I am a string";
+"";
+"123";
+
+//Arithmetic 
+1 + 5;
+3 - 2;
+4 * 4;
+8 / 2;
+
+//unary
+-15;
+
+//comparison and equality
+15 < 20;
+20 < 15;
+
+15 > 20;
+20 > 15;
+
+15 <= 15;
+
+15 >= 15;
+
+1 == 2;
+"cat" != "dog"; //true
+
+314 = "pi"; //false
+
+123 == "123"//false
+
+

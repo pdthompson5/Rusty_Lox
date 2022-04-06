@@ -8,17 +8,17 @@ struct RuntimeError{
     message: String,
     line: u32
 }   
-struct Interpreter {
+pub struct Interpreter {
 
 }
 
 impl Interpreter{
-    fn interpret(&mut self, expr : &Box<Expr>){
+    pub fn interpret(&mut self, expr : &Box<Expr>){
         let result = self.evaluate(expr);
-        // match result{
-        //     Ok(val) => ,
-        //     Err(message) => crate::,
-        // }
+        match result{
+            Ok(val) => println!("{}", val),
+            Err(error) => crate::error(error.line, &error.message),
+        }
     }
 
     fn evaluate(&mut self, expr: &Box<Expr>) -> Result<LoxValue, RuntimeError> {
