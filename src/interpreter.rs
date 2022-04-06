@@ -2,7 +2,7 @@ use crate::expr::Expr;
 use crate::expr::Visitor;
 use crate::lox_type::LoxValue::{self, *};
 use crate::token::{Token, TokenType::*};
-//Current status: Should be ready to hook up
+
 
 struct RuntimeError{
     message: String,

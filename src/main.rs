@@ -16,7 +16,7 @@ mod parser;
 
 
 use crate::scanner::Scanner;
-
+//TODO: Current status: Everything is looking good, I think I'm ready to keep going 
 
 
 fn main(){
@@ -142,18 +142,7 @@ impl Lox{
         if self.had_runtime_error{
             return Err(())
         }
-
-
         Ok(())
-    
-        // if self.had_error{
-        //     std::process::exit(65);
-        // }
-        // if self.had_runtime_error{
-        //     std::process::exit(70);
-        // }
-
-        
     }
     
 }
