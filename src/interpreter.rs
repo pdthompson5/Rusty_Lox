@@ -4,30 +4,43 @@ use crate::lox_type::LoxValue::{self, *};
 use crate::token::{Token, TokenType::*};
 //Current status: Should be ready to hook up
 
+struct RuntimeError{
+    message: String,
+    line: u32
+}   
 struct Interpreter {
 
 }
 
 impl Interpreter{
+    fn interpret(&mut self, expr : &Box<Expr>){
+        let result = self.evaluate(expr);
+        // match result{
+        //     Ok(val) => ,
+        //     Err(message) => crate::,
+        // }
+    }
 
-
-    fn evaluate(&mut self, expr: &Box<Expr>) -> Result<LoxValue, String> {
+    fn evaluate(&mut self, expr: &Box<Expr>) -> Result<LoxValue, RuntimeError> {
         expr.accept(self)
     }
 }
 
-fn token_error_string(token: &Token, message: String) -> String{
-    ["at '", token.lexeme.as_str(), "'", message.as_str()].concat()
+fn error(token: &Token, message: String) -> RuntimeError{
+    RuntimeError{
+        message : ["at '", token.lexeme.as_str(), "'", message.as_str()].concat(),
+        line: token.line
+    }
 }
 
-fn invalid_operand_number(operator: &Token) -> String{
-    token_error_string(operator, "Operand must be a number.".to_string())
+fn invalid_operand_number(operator: &Token) -> RuntimeError{
+    error(operator, "Operand must be a number.".to_string())
 }
 
 
-impl Visitor<Result<LoxValue, String>> for Interpreter{
+impl Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
 
-    fn visit_binary_expr(&mut self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> Result<LoxValue, String>{
+    fn visit_binary_expr(&mut self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
         let left_eval = self.evaluate(left)?;
         let right_eval = self.evaluate(right)?;
 
@@ -35,13 +48,13 @@ impl Visitor<Result<LoxValue, String>> for Interpreter{
             PLUS => match left_eval {
                 Number(left_val) => match right_eval{
                     Number(right_val) => Ok(Number(left_val + right_val)),
-                    _ => Err(token_error_string(operator, "Operand types do not match".to_string()))
+                    _ => Err(error(operator, "Operand types do not match".to_string()))
                 },
                 LoxString(left_val) => match right_eval{
                     LoxString(right_val) => Ok(LoxString([left_val.as_str(), right_val.as_str()].concat().to_string())),
-                    _ => Err(token_error_string(operator, "Operand types do not match".to_string()))
+                    _ => Err(error(operator, "Operand types do not match".to_string()))
                 },
-                _ => Err(token_error_string(operator, "Invalid operands. Operands must be numbers or Strings".to_string()))
+                _ => Err(error(operator, "Invalid operands. Operands must be numbers or Strings".to_string()))
             },
 
             MINUS => match left_eval {
@@ -101,19 +114,19 @@ impl Visitor<Result<LoxValue, String>> for Interpreter{
             //LoxValue implements PartialEq so simple equality comparisons work 
             EQUAL_EQUAL => Ok(Boolean(left_eval == right_eval)),
             BANG_EQUAL => Ok(Boolean(left_eval != right_eval)),
-            _ => Err(token_error_string(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
+            _ => Err(error(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
         }
     }
 
-    fn visit_grouping_expr(&mut self, expression : &Box<Expr>) -> Result<LoxValue, String>{
+    fn visit_grouping_expr(&mut self, expression : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
         self.evaluate(expression)
     }
 
-    fn visit_literal_expr(&mut self, value : &LoxValue) -> Result<LoxValue, String>{
+    fn visit_literal_expr(&mut self, value : &LoxValue) -> Result<LoxValue, RuntimeError>{
         Ok(value.clone())
     }
 
-    fn visit_unary_expr(&mut self, operator : &Token, expression : &Box<Expr>) -> Result<LoxValue, String>{
+    fn visit_unary_expr(&mut self, operator : &Token, expression : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
         let right = self.evaluate(expression)?;
 
         match operator.kind {
@@ -122,7 +135,7 @@ impl Visitor<Result<LoxValue, String>> for Interpreter{
                 _ => Err(invalid_operand_number(operator))
             }
             BANG => Ok(Boolean(right.is_truthy())),
-            _ => Err(token_error_string(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
+            _ => Err(error(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
         }
     }
 }
