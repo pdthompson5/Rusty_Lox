@@ -150,7 +150,7 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
 impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
     fn visit_expression_stmt(&mut self, expression: &Box<Expr>) -> Result<(), RuntimeError>{
         match self.evaluate(expression){
-            Ok(val) => Ok(()),
+            Ok(_val) => Ok(()),
             Err(error) => Err(error),
         }
     }

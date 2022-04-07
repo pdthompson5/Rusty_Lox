@@ -1,5 +1,4 @@
 use std::fmt;
-use crate::token::Token;
 #[derive(Clone, PartialEq, Debug)]
 pub enum LoxValue{
     Boolean(bool),

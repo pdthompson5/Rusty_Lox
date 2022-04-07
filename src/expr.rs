@@ -6,6 +6,7 @@ pub enum Expr<'a> {
     Grouping{expression: Box<Expr<'a>>},
     Literal{value: LoxValue},
     Unary{operator: &'a Token, right: Box<Expr<'a>>},
+    Variable{name: &'a Token},
 }
 
 pub trait Visitor<T> {
@@ -13,6 +14,7 @@ pub trait Visitor<T> {
     fn visit_grouping_expr(&mut self, expression : &Box<Expr>) -> T;
     fn visit_literal_expr(&mut self, expr : &LoxValue) -> T;
     fn visit_unary_expr(&mut self, operator : &Token, right : &Box<Expr>) -> T;
+    fn visit_variable_expr(&mut self, name : &Token) -> T;
 }
 
 impl<'a> Expr<'a>{
@@ -22,6 +24,7 @@ impl<'a> Expr<'a>{
             Self::Grouping { expression } => visitor.visit_grouping_expr(expression),
             Self::Literal { value } => visitor.visit_literal_expr(value),
             Self::Unary { operator, right} => visitor.visit_unary_expr(operator, right),
+            Self::Variable {name} => visitor.visit_variable_expr(name),
         }
     }
 }

@@ -9,7 +9,6 @@ use crate::stmt::Stmt;
 pub struct Parser<'a>{
     tokens: &'a Vec<Token>,
     current: u32,
-    had_error: bool
 }
 
 impl<'a> Parser<'a>{
@@ -17,19 +16,70 @@ impl<'a> Parser<'a>{
         Parser { 
             tokens: tokens, 
             current: 0,
-            had_error: false
         }
     }
 
     pub fn parse(&mut self) -> Result<Vec<Box<Stmt>>, ()>{
         let mut statements : Vec<Box<Stmt>> = vec![];
+        let mut had_error = false;
         while !self.is_at_end(){
-            match self.statement(){
+            match self.declaration(){
                 Ok(statement) => statements.push(statement),
-                Err(()) => return Err(()),
+                Err(()) => had_error = true,
             };
         }
-        return Ok(statements)
+
+        if had_error {
+            Err(())
+        } else{
+            Ok(statements)
+        }
+    }
+
+    pub fn declaration(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+        let mut statement = {
+            if self.match_token(vec![VAR]){
+                self.var_declaration()
+            } else{
+                self.statement()
+            }
+        };
+
+        match statement{
+            Ok(stmt) => Ok(stmt),
+            Err(()) => {
+                self.synchronize();
+                Err(())
+            }
+        }
+    } 
+
+
+    
+    pub fn var_declaration(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+        let name = match self.consume(IDENTIFIER, "Expect variable name.".to_string()){
+            Ok(identifier) => identifier,
+            Err(()) => return Err(()) 
+        };
+
+        
+        let initializer = {
+            if self.match_token(vec![EQUAL]){
+                match self.expression(){
+                    Ok(expr) => expr,
+                    Err(_expr) => return Err(())
+                }
+            } else{
+                Box::new(Expr::Literal { value: LoxValue::Nil})
+            }
+        };
+
+        if let Err(()) = self.consume(SEMICOLON, "Expect ';' after variable declaration.".to_string()){
+            Err(())
+        } else{
+            Ok(Box::new(Stmt::Var { name, initializer }))
+        }
+
     }
 
     pub fn statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
@@ -46,12 +96,11 @@ impl<'a> Parser<'a>{
             Err(_expr) => return Err(()) 
         };
 
-        match self.consume(SEMICOLON, "Expect ';' after value".to_string()){
-            Ok(()) => (),
-            Err(_nil_expr) => return Err(())
-        };
-
-        Ok(Box::new(Stmt::Print { expression }))
+        if let Err(()) = self.consume(SEMICOLON, "Expect ';' after value".to_string()){
+            Err(())
+        } else{
+            Ok(Box::new(Stmt::Print { expression }))
+        }
     }
 
     pub fn expression_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
@@ -60,12 +109,11 @@ impl<'a> Parser<'a>{
             Err(_expr) => return Err(()) 
         };
 
-        match self.consume(SEMICOLON, "Expect ';' after value".to_string()){
-            Ok(()) => (),
-            Err(_nil_expr) => return Err(())
-        };
-
-        Ok(Box::new(Stmt::Expression { expression }))
+        if let Err(()) = self.consume(SEMICOLON, "Expect ';' after value".to_string()){
+            Err(())
+        } else{
+            Ok(Box::new(Stmt::Expression { expression }))
+        }        
     }
 
 
@@ -143,18 +191,25 @@ impl<'a> Parser<'a>{
         if self.match_token(vec![NUMBER, STRING]){
             return Ok(Box::new(Expr::Literal { value: self.previous().literal.clone() }));
         }
+
+        if self.match_token(vec![IDENTIFIER]){
+            return Ok(Box::new(Expr::Variable { name: self.previous() }))
+        }
         
         if self.match_token(vec![LEFT_PAREN]){
             let expr = self.expression()?;
-            self.consume(RIGHT_PAREN, "Expect ')' after expression".to_string())?;
-            return Ok(Box::new(Expr::Grouping { expression: expr }));
+            if let Err(()) = self.consume(RIGHT_PAREN, "Expect ')' after expression".to_string()){
+                return Err(Box::new(Expr::Literal { value: LoxValue::Nil}));
+            } else{
+                return Ok(Box::new(Expr::Grouping { expression: expr }));
+            };
         }
         
         //No expression matched
         crate::error_token(self.peek(), "Expect Expression".to_string()); // report error
         //An expression must be returned so just return Nil. The value of the expression should never be used.
         //TODO: Determine if this is true
-        return Err(Box::new(Expr::Literal { value: LoxValue::Nil})); 
+        Err(Box::new(Expr::Literal { value: LoxValue::Nil}))
     }
 
 
@@ -176,7 +231,7 @@ impl<'a> Parser<'a>{
         self.peek().kind == token_type
     }
 
-    fn advance(&mut self) -> &Token{
+    fn advance(&mut self) -> &'a Token{
         if !self.is_at_end(){
             self.current += 1;
         }
@@ -197,16 +252,30 @@ impl<'a> Parser<'a>{
     }
 
     //My consume function differs from the author's because Rust does not include exceptions 
-    //Consume should be called using the '?' operator to propagate the error
-    fn consume(&mut self, token_type: TokenType, message: String) -> Result<(), Box<Expr<'a>>>{
+    fn consume(&mut self, token_type: TokenType, message: String) -> Result<&'a Token, ()>{
         if self.check(token_type){
-            self.advance();
-            return Ok(());
+            Ok(self.advance())
         } else{
-            self.had_error = true;
             crate::error_token(self.peek(), message);
-            return Err(Box::new(Expr::Literal { value: LoxValue::Nil}));
+            Err(())
         }        
+    }
+
+    pub fn synchronize(&mut self){
+        self.advance();
+
+        while !self.is_at_end() {
+            if self.previous().kind == SEMICOLON {
+                return;
+            }
+            
+            match self.peek().kind{
+                CLASS | FUN | VAR | FOR | IF | WHILE | PRINT | RETURN => return,
+                _ => ()
+            }
+
+            self.advance();
+        }
     }
 
 
