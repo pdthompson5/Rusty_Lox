@@ -1,6 +1,7 @@
 
 use crate::{token::{TokenType::{self, *}, Token}, lox_type::LoxValue};
 use crate::expr::Expr;
+use crate::stmt::Stmt;
 //The rampant lifetime annotations in the file are a result of a vicious wrestling match the the borrow checker. 
 //I am not sure how many are needed by this works
 //What they mean to me is that the expression returned by parse is only valid as long as the tokens vector is in scope.
@@ -20,9 +21,53 @@ impl<'a> Parser<'a>{
         }
     }
 
-    pub fn parse(&mut self) -> Result<Box<Expr>, Box<Expr>>{
-        self.expression()
+    pub fn parse(&mut self) -> Result<Vec<Box<Stmt>>, ()>{
+        let mut statements : Vec<Box<Stmt>> = vec![];
+        while !self.is_at_end(){
+            match self.statement(){
+                Ok(statement) => statements.push(statement),
+                Err(()) => return Err(()),
+            };
+        }
+        return Ok(statements)
     }
+
+    pub fn statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+        if self.match_token(vec![PRINT]){
+            return self.print_statement()
+        }
+
+        self.expression_statement()
+    }
+
+    pub fn print_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+        let expression = match self.expression(){
+            Ok(expr) => expr,
+            Err(_expr) => return Err(()) 
+        };
+
+        match self.consume(SEMICOLON, "Expect ';' after value".to_string()){
+            Ok(()) => (),
+            Err(_nil_expr) => return Err(())
+        };
+
+        Ok(Box::new(Stmt::Print { expression }))
+    }
+
+    pub fn expression_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+        let expression = match self.expression(){
+            Ok(expr) => expr,
+            Err(_expr) => return Err(()) 
+        };
+
+        match self.consume(SEMICOLON, "Expect ';' after value".to_string()){
+            Ok(()) => (),
+            Err(_nil_expr) => return Err(())
+        };
+
+        Ok(Box::new(Stmt::Expression { expression }))
+    }
+
 
     fn expression(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
         self.equality()
@@ -106,8 +151,10 @@ impl<'a> Parser<'a>{
         }
         
         //No expression matched
-        crate::error_token(self.peek(), "Expect Expression".to_string()); // report errror
-        return Err(Box::new(Expr::Literal { value: LoxValue::Nil})); //Returning this Nil expression signals an error. The value of the expression should never be used.
+        crate::error_token(self.peek(), "Expect Expression".to_string()); // report error
+        //An expression must be returned so just return Nil. The value of the expression should never be used.
+        //TODO: Determine if this is true
+        return Err(Box::new(Expr::Literal { value: LoxValue::Nil})); 
     }
 
 

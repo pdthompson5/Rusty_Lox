@@ -1,24 +1,30 @@
-use crate::expr::Expr;
-use crate::expr::Visitor;
+use crate::expr::{self, Expr};
+use crate::stmt::{self, Stmt};
 use crate::lox_type::LoxValue::{self, *};
 use crate::token::{Token, TokenType::*};
 
 
-struct RuntimeError{
-    message: String,
-    line: u32
+pub struct RuntimeError{
+    pub message: String,
+    pub line: u32
 }   
 pub struct Interpreter {
 
 }
 
 impl Interpreter{
-    pub fn interpret(&mut self, expr : &Box<Expr>){
-        let result = self.evaluate(expr);
-        match result{
-            Ok(val) => println!("{}", val),
-            Err(error) => crate::error(error.line, &error.message),
+    pub fn interpret(&mut self, statements : Vec<Box<Stmt>>) -> Result<(), RuntimeError>{    
+        for statement in statements{
+            match self.execute(&statement){
+                Ok(()) => (),
+                Err(error) => return Err(error),
+            }
         }
+        Ok(())
+    }
+
+    fn execute(&mut self, stmt : &Box<Stmt>) -> Result<(), RuntimeError>{
+        stmt.accept(self)
     }
 
     fn evaluate(&mut self, expr: &Box<Expr>) -> Result<LoxValue, RuntimeError> {
@@ -38,7 +44,7 @@ fn invalid_operand_number(operator: &Token) -> RuntimeError{
 }
 
 
-impl Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
+impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
 
     fn visit_binary_expr(&mut self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
         let left_eval = self.evaluate(left)?;
@@ -136,6 +142,26 @@ impl Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
             }
             BANG => Ok(Boolean(right.is_truthy())),
             _ => Err(error(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
+        }
+    }
+}
+
+
+impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
+    fn visit_expression_stmt(&mut self, expression: &Box<Expr>) -> Result<(), RuntimeError>{
+        match self.evaluate(expression){
+            Ok(val) => Ok(()),
+            Err(error) => Err(error),
+        }
+    }
+
+    fn visit_print_stmt(&mut self, expression: &Box<Expr>) -> Result<(), RuntimeError>{
+        match self.evaluate(expression){
+            Ok(val) => {
+                println!("{}", val);
+                Ok(())
+            },
+            Err(error) => Err(error),
         }
     }
 }

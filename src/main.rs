@@ -12,6 +12,7 @@ mod expr;
 mod interpreter;
 mod ast_printer;
 mod parser;
+mod stmt;
 
 
 
@@ -123,28 +124,25 @@ impl Lox{
 
     
         let mut parser = Parser::new(tokens);
-        let expression = match parser.parse(){
+        let statements = match parser.parse(){
             Ok(expr) => expr,
-            Err(expr) => {self.had_error = true; expr}
+            Err(()) => {self.had_error = true; return Err(())}
         };
     
-
-        if self.had_error{
-            return Err(())
-        }
 
         // let mut printer = AstPrinter{};
         // println!("{}", printer.print(expression));
         
         
-        self.interpreter.interpret(&expression);
-        
-        if self.had_runtime_error{
-            return Err(())
+        match self.interpreter.interpret(statements){
+            Ok(()) => Ok(()),
+            Err(error) => {
+                self.had_runtime_error = true; 
+                crate::error(error.line, &error.message);
+                Err(())
+            }
         }
-        Ok(())
     }
-    
 }
 
 
