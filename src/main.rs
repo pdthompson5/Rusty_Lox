@@ -1,7 +1,6 @@
 use std::env;
 use std::fs;
 use std::io::{self, BufRead, Write};
-use crate::ast_printer::AstPrinter;
 use crate::token::{Token, TokenType};
 use crate::parser::Parser;
 use crate::interpreter::Interpreter;
