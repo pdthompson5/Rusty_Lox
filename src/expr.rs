@@ -7,6 +7,7 @@ pub enum Expr<'a> {
     Literal{value: LoxValue},
     Unary{operator: &'a Token, right: Box<Expr<'a>>},
     Variable{name: &'a Token},
+    Assign{name: &'a Token, value: Box<Expr<'a>>}
 }
 
 pub trait Visitor<T> {
@@ -15,6 +16,7 @@ pub trait Visitor<T> {
     fn visit_literal_expr(&mut self, expr : &LoxValue) -> T;
     fn visit_unary_expr(&mut self, operator : &Token, right : &Box<Expr>) -> T;
     fn visit_variable_expr(&mut self, name : &Token) -> T;
+    fn visit_assign_expr(&mut self, name: &Token, value: &Box<Expr>) -> T;
 }
 
 impl<'a> Expr<'a>{
@@ -25,6 +27,7 @@ impl<'a> Expr<'a>{
             Self::Literal { value } => visitor.visit_literal_expr(value),
             Self::Unary { operator, right} => visitor.visit_unary_expr(operator, right),
             Self::Variable {name} => visitor.visit_variable_expr(name),
+            Self::Assign {name, value} => visitor.visit_assign_expr(name, value),
         }
     }
 }

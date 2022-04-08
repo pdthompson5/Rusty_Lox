@@ -1,3 +1,4 @@
+use crate::environment::{Environment, self};
 use crate::expr::{self, Expr};
 use crate::stmt::{self, Stmt};
 use crate::lox_type::LoxValue::{self, *};
@@ -9,10 +10,15 @@ pub struct RuntimeError{
     pub line: u32
 }   
 pub struct Interpreter {
-
+    environment: Environment
 }
 
 impl Interpreter{
+    pub fn new() -> Self {
+        Interpreter {  
+            environment : Environment::new()
+        }
+    }
     pub fn interpret(&mut self, statements : Vec<Box<Stmt>>) -> Result<(), RuntimeError>{    
         for statement in statements{
             match self.execute(&statement){
@@ -144,6 +150,18 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
             _ => Err(error(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
         }
     }
+    //in Lox: pass by value: all of the values that I have so far. I think functions should be passed by reference
+    //Can I do that by just having a Lox value for functions that contains the reference rather than making it a LoxValue reference?
+    fn visit_variable_expr(&mut self, name: &Token) -> Result<LoxValue, RuntimeError> {
+        self.environment.get(name)
+    }
+
+    fn visit_assign_expr(&mut self, name: &Token, value: &Box<Expr>) -> Result<LoxValue, RuntimeError> {
+        let value = self.evaluate(value)?;
+        self.environment.assign(name, &value)?;
+        Ok(value)
+    }
+
 }
 
 
@@ -163,5 +181,12 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
             },
             Err(error) => Err(error),
         }
+    }
+
+    fn visit_var_stmt(&mut self, name: &Token, initializer: &Box<Expr>) -> Result<(), RuntimeError>{
+        //initializer can always be evaluated becuase if it is empty it is a literal nil expression
+        let value = self.evaluate(initializer)?;
+        self.environment.define(name.lexeme.clone(), value);
+        Ok(())
     }
 }

@@ -12,6 +12,7 @@ mod interpreter;
 mod ast_printer;
 mod parser;
 mod stmt;
+mod environment;
 
 
 
@@ -23,7 +24,7 @@ fn main(){
     let mut lox = Lox{
         had_error: false,
         had_runtime_error: false,
-        interpreter: Interpreter {  }
+        interpreter: Interpreter::new()
     };
     lox.main();
 }

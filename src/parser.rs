@@ -118,8 +118,33 @@ impl<'a> Parser<'a>{
 
 
     fn expression(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+        let mut expr  = self.assignment()?;
+
+        if self.match_token(vec![EQUAL]){
+            let equals = self.previous();
+            let value = self.assignment()?;
+
+            match expr.as_ref(){
+                //Make sure left side is L-value
+                Expr::Variable{name} => {
+                    Ok(Box::new(Expr::Assign { name , value}))
+                },
+                _ => {
+                    crate::error_token(equals, "Invalid assignment target.".to_string());
+                    Err(Box::new(Expr::Literal { value: LoxValue::Nil}))
+                }
+            }
+
+            //need to be a varible expression
+        } else {
+            Ok(expr)
+        }        
+    }
+
+    fn assignment(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
         self.equality()
     }
+
     //I think that I need to show that the return value won't have the mutable self refernce in it 
     fn equality(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
         let mut expr = self.comparison()?;
