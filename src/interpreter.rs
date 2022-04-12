@@ -153,6 +153,22 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
         Ok(value.clone())
     }
 
+    fn visit_logical_expr(&self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
+        let left = self.evaluate(left)?;
+
+        if let OR = operator.kind{
+            if left.is_truthy() {
+                return Ok(left)
+            }
+        } else if let AND = operator.kind {
+            if !left.is_truthy(){
+                return Ok(left)
+            }
+        } 
+        
+        self.evaluate(right)
+    }
+
     fn visit_unary_expr(&self, operator : &Token, expression : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
         let right = self.evaluate(expression)?;
 

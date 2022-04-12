@@ -166,7 +166,11 @@ impl<'a> Parser<'a>{
 
 
     fn expression(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
-        let expr  = self.assignment()?;
+        self.assignment()   
+    }
+
+    fn assignment(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+        let expr  = self.or()?;
 
         if self.match_token(vec![EQUAL]){
             let equals = self.previous();
@@ -186,12 +190,34 @@ impl<'a> Parser<'a>{
             //need to be a varible expression
         } else {
             Ok(expr)
-        }        
+        }
     }
 
-    fn assignment(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
-        self.equality()
+    fn or(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+        let mut expr = self.and()?;
+
+        while self.match_token(vec![OR]){
+            let operator = self.previous();
+            let right = self.and()?;
+            expr = Box::new(Expr::Logical { left: expr, operator, right});
+        }   
+
+        Ok(expr)
     }
+
+    fn and(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+        let mut expr = self.equality()?;
+
+        while self.match_token(vec![AND]){
+            let operator = self.previous();
+            let right = self.equality()?;
+            expr = Box::new(Expr::Logical { left: expr, operator, right});
+        }
+
+        Ok(expr)
+    }
+
+    
 
     //I think that I need to show that the return value won't have the mutable self refernce in it 
     fn equality(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
