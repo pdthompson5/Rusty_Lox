@@ -83,18 +83,14 @@ impl<'a> Parser<'a>{
     }
 
     pub fn while_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
-        if let Err(()) = self.consume(LEFT_PAREN, "Expect '(' after 'while'.".to_string()){
-            return Err(());
-        }
+        self.consume(LEFT_PAREN, "Expect '(' after 'while'.".to_string())?;
 
         let condition = match self.expression(){
             Ok(expr) => expr,
             Err(_expr) => return Err(())
         };
 
-        if let Err(()) = self.consume(RIGHT_PAREN, "Expect ')' after condition.".to_string()){
-            return Err(());
-        }
+        self.consume(RIGHT_PAREN, "Expect ')' after condition.".to_string())?;
 
         let body = self.statement()?;
 
@@ -102,6 +98,9 @@ impl<'a> Parser<'a>{
     }
 
     pub fn statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+        if self.match_token(vec![FOR]){
+            return self.for_statement()
+        }
         if self.match_token(vec![IF]){
             return self.if_statement()
         }
@@ -121,17 +120,72 @@ impl<'a> Parser<'a>{
         self.expression_statement()
     }
 
+    fn for_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+        self.consume(LEFT_PAREN, "Expect '(' after 'for'.".to_string())?;
+
+        let initializer = 
+            if self.match_token(vec![SEMICOLON]){
+                None
+            } else if self.match_token(vec![VAR]){
+                Some(self.var_declaration()?)
+            } else{
+                Some(self.expression_statement()?)
+            };
+        
+        let condition = 
+            if !self.check(SEMICOLON){
+                match self.expression(){
+                    Ok(expr) => Some(expr),
+                    Err(_expr) => return Err(())
+                }
+            } else{
+                None
+            };
+        self.consume(SEMICOLON, "Expect ';' after loop condition.".to_string())?;
+        
+        let increment = 
+            if !self.check(RIGHT_PAREN){
+                match self.expression(){
+                    Ok(expr) => Some(expr),
+                    Err(_expr) => return Err(())
+                }
+            } else{
+                None
+            };
+        self.consume(RIGHT_PAREN, "Expect ')' after for clause.".to_string())?;
+        
+        let mut body = self.statement()?;
+
+        body = match increment {
+            Some(expr) => Box::new(Stmt::Block { statements: vec![body, Box::new(Stmt::Expression { expression: expr })]}),
+            None => body
+        };
+
+        let condition_expr = match condition{
+            Some(expr) => expr,
+            None => Box::new(Expr::Literal { value: LoxValue::Boolean(true) })
+        };
+
+        body = Box::new(Stmt::While{condition: condition_expr, body});
+
+        body = match initializer{
+            Some(stmt) => Box::new(Stmt::Block { statements: vec![stmt, body] }),
+            None => body
+        };
+
+        Ok(body)
+
+    }
+
     fn if_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
-        if let Err(()) = self.consume(LEFT_PAREN, "Expect '(' after 'if'.".to_string()){
-            return Err(())
-        } 
+        self.consume(LEFT_PAREN, "Expect '(' after 'if'.".to_string())?;
+
         let condition = match self.expression(){
             Ok(expr) => expr,
             Err(_expr) => return Err(())
         };
-        if let Err(()) = self.consume(RIGHT_PAREN, "Expect ')' after if condition.".to_string()){
-            return Err(())
-        };
+
+        self.consume(RIGHT_PAREN, "Expect ')' after if condition.".to_string())?;
         
         let then_branch = self.statement()?;
         let else_branch = {
