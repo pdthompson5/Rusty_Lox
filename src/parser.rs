@@ -82,12 +82,34 @@ impl<'a> Parser<'a>{
 
     }
 
+    pub fn while_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+        if let Err(()) = self.consume(LEFT_PAREN, "Expect '(' after 'while'.".to_string()){
+            return Err(());
+        }
+
+        let condition = match self.expression(){
+            Ok(expr) => expr,
+            Err(_expr) => return Err(())
+        };
+
+        if let Err(()) = self.consume(RIGHT_PAREN, "Expect ')' after condition.".to_string()){
+            return Err(());
+        }
+
+        let body = self.statement()?;
+
+        Ok(Box::new(Stmt::While { condition, body }))
+    }
+
     pub fn statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
         if self.match_token(vec![IF]){
             return self.if_statement()
         }
         if self.match_token(vec![PRINT]){
             return self.print_statement()
+        }
+        if self.match_token(vec![WHILE]){
+            return self.while_statement()
         }
         if self.match_token(vec![LEFT_BRACE]){
            match self.block(){

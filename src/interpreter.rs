@@ -221,6 +221,13 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
         Ok(())
     }
 
+    fn visit_while_stmt(&self, condition: &Box<Expr>, body: &Box<Stmt>) -> Result<(), RuntimeError>{
+        while self.evaluate(condition)?.is_truthy(){
+            self.execute(body)?;
+        }
+        Ok(())
+    }
+
 
 
     fn visit_block_stmt(&self, statements: &Vec<Box<Stmt>>) -> Result<(), RuntimeError>{
