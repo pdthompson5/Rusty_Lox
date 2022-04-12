@@ -37,7 +37,7 @@ impl<'a> Parser<'a>{
     }
 
     pub fn declaration(&mut self) -> Result<Box<Stmt<'a>>, ()>{
-        let mut statement = {
+        let statement = {
             if self.match_token(vec![VAR]){
                 self.var_declaration()
             } else{
@@ -83,11 +83,59 @@ impl<'a> Parser<'a>{
     }
 
     pub fn statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+        if self.match_token(vec![IF]){
+            return self.if_statement()
+        }
         if self.match_token(vec![PRINT]){
             return self.print_statement()
         }
+        if self.match_token(vec![LEFT_BRACE]){
+           match self.block(){
+               Ok(statements) => return Ok(Box::new(Stmt::Block { statements })),
+               Err(()) => return Err(())
+           }
+        }
 
         self.expression_statement()
+    }
+
+    fn if_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+        if let Err(()) = self.consume(LEFT_PAREN, "Expect '(' after 'if'.".to_string()){
+            return Err(())
+        } 
+        let condition = match self.expression(){
+            Ok(expr) => expr,
+            Err(_expr) => return Err(())
+        };
+        if let Err(()) = self.consume(RIGHT_PAREN, "Expect ')' after if condition.".to_string()){
+            return Err(())
+        };
+        
+        let then_branch = self.statement()?;
+        let else_branch = {
+            if self.match_token(vec![ELSE]){
+                Some(self.statement()?)
+            } else{
+                None
+            }
+        };
+
+        Ok(Box::new(Stmt::If { condition, then_branch, else_branch}))
+    }
+
+
+    fn block(&mut self) -> Result<Vec<Box<Stmt<'a>>>, ()> {
+        let mut statements = vec![];
+        
+        while !self.check(RIGHT_BRACE) && !self.is_at_end(){
+            statements.push(self.declaration()?)
+        }
+        if let Err(()) = self.consume(RIGHT_BRACE, "Expect '}' after block.".to_string()){
+            Err(())
+        } else{
+            Ok(statements)
+        }
+        
     }
 
     pub fn print_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
@@ -118,7 +166,7 @@ impl<'a> Parser<'a>{
 
 
     fn expression(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
-        let mut expr  = self.assignment()?;
+        let expr  = self.assignment()?;
 
         if self.match_token(vec![EQUAL]){
             let equals = self.previous();

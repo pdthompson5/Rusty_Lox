@@ -11,16 +11,16 @@ pub enum Expr<'a> {
 }
 
 pub trait Visitor<T> {
-    fn visit_binary_expr(&mut self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> T;
-    fn visit_grouping_expr(&mut self, expression : &Box<Expr>) -> T;
-    fn visit_literal_expr(&mut self, expr : &LoxValue) -> T;
-    fn visit_unary_expr(&mut self, operator : &Token, right : &Box<Expr>) -> T;
-    fn visit_variable_expr(&mut self, name : &Token) -> T;
-    fn visit_assign_expr(&mut self, name: &Token, value: &Box<Expr>) -> T;
+    fn visit_binary_expr(&self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> T;
+    fn visit_grouping_expr(&self, expression : &Box<Expr>) -> T;
+    fn visit_literal_expr(&self, expr : &LoxValue) -> T;
+    fn visit_unary_expr(&self, operator : &Token, right : &Box<Expr>) -> T;
+    fn visit_variable_expr(&self, name : &Token) -> T;
+    fn visit_assign_expr(&self, name: &Token, value: &Box<Expr>) -> T;
 }
 
 impl<'a> Expr<'a>{
-    pub fn accept<T>(&self, visitor: &mut impl Visitor<T>) -> T{
+    pub fn accept<T>(&self, visitor: &impl Visitor<T>) -> T{
         match self{
             Self::Binary { left, operator, right} => visitor.visit_binary_expr(left, operator, right),
             Self::Grouping { expression } => visitor.visit_grouping_expr(expression),

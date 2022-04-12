@@ -1,22 +1,26 @@
-use crate::environment::{Environment, self};
+
+
+use crate::environment::Environment;
 use crate::expr::{self, Expr};
 use crate::stmt::{self, Stmt};
 use crate::lox_type::LoxValue::{self, *};
 use crate::token::{Token, TokenType::*};
-
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct RuntimeError{
     pub message: String,
     pub line: u32
 }   
-pub struct Interpreter {
-    environment: Environment
+pub struct Interpreter{
+    environment: RefCell<Rc<RefCell<Environment>>>
 }
 
-impl Interpreter{
+impl  Interpreter{
     pub fn new() -> Self {
         Interpreter {  
-            environment : Environment::new()
+            //Pattern for handling environment references from: https://github.com/UncleScientist/lox-ast
+            environment : RefCell::new(Rc::new(RefCell::new(Environment::new())))
         }
     }
     pub fn interpret(&mut self, statements : Vec<Box<Stmt>>) -> Result<(), RuntimeError>{    
@@ -29,11 +33,22 @@ impl Interpreter{
         Ok(())
     }
 
-    fn execute(&mut self, stmt : &Box<Stmt>) -> Result<(), RuntimeError>{
+    fn execute(&self, stmt : &Box<Stmt>) -> Result<(), RuntimeError>{
         stmt.accept(self)
     }
 
-    fn evaluate(&mut self, expr: &Box<Expr>) -> Result<LoxValue, RuntimeError> {
+    fn execute_block(&self, statements: &Vec<Box<Stmt>>, environment : Environment) -> Result<(), RuntimeError>{
+        let previous = self.environment.replace(Rc::new(RefCell::new(environment)));
+        
+        for statement in statements{
+            self.execute(statement)?;
+        }
+
+        self.environment.replace(previous);
+        Ok(())
+    }
+
+    fn evaluate(&self, expr: &Box<Expr>) -> Result<LoxValue, RuntimeError> {
         expr.accept(self)
     }
 }
@@ -52,7 +67,7 @@ fn invalid_operand_number(operator: &Token) -> RuntimeError{
 
 impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
 
-    fn visit_binary_expr(&mut self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
+    fn visit_binary_expr(&self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
         let left_eval = self.evaluate(left)?;
         let right_eval = self.evaluate(right)?;
 
@@ -130,15 +145,15 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
         }
     }
 
-    fn visit_grouping_expr(&mut self, expression : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
+    fn visit_grouping_expr(&self, expression : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
         self.evaluate(expression)
     }
 
-    fn visit_literal_expr(&mut self, value : &LoxValue) -> Result<LoxValue, RuntimeError>{
+    fn visit_literal_expr(&self, value : &LoxValue) -> Result<LoxValue, RuntimeError>{
         Ok(value.clone())
     }
 
-    fn visit_unary_expr(&mut self, operator : &Token, expression : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
+    fn visit_unary_expr(&self, operator : &Token, expression : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
         let right = self.evaluate(expression)?;
 
         match operator.kind {
@@ -152,13 +167,13 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
     }
     //in Lox: pass by value: all of the values that I have so far. I think functions should be passed by reference
     //Can I do that by just having a Lox value for functions that contains the reference rather than making it a LoxValue reference?
-    fn visit_variable_expr(&mut self, name: &Token) -> Result<LoxValue, RuntimeError> {
-        self.environment.get(name)
+    fn visit_variable_expr(&self, name: &Token) -> Result<LoxValue, RuntimeError> {
+        self.environment.borrow().borrow().get(name)
     }
 
-    fn visit_assign_expr(&mut self, name: &Token, value: &Box<Expr>) -> Result<LoxValue, RuntimeError> {
+    fn visit_assign_expr(&self, name: &Token, value: &Box<Expr>) -> Result<LoxValue, RuntimeError> {
         let value = self.evaluate(value)?;
-        self.environment.assign(name, &value)?;
+        self.environment.borrow().borrow_mut().assign(name, &value)?;
         Ok(value)
     }
 
@@ -166,14 +181,14 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
 
 
 impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
-    fn visit_expression_stmt(&mut self, expression: &Box<Expr>) -> Result<(), RuntimeError>{
+    fn visit_expression_stmt(&self, expression: &Box<Expr>) -> Result<(), RuntimeError>{
         match self.evaluate(expression){
             Ok(_val) => Ok(()),
             Err(error) => Err(error),
         }
     }
 
-    fn visit_print_stmt(&mut self, expression: &Box<Expr>) -> Result<(), RuntimeError>{
+    fn visit_print_stmt(&self, expression: &Box<Expr>) -> Result<(), RuntimeError>{
         match self.evaluate(expression){
             Ok(val) => {
                 println!("{}", val);
@@ -183,10 +198,29 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
         }
     }
 
-    fn visit_var_stmt(&mut self, name: &Token, initializer: &Box<Expr>) -> Result<(), RuntimeError>{
+    fn visit_var_stmt(&self, name: &Token, initializer: &Box<Expr>) -> Result<(), RuntimeError>{
         //initializer can always be evaluated becuase if it is empty it is a literal nil expression
         let value = self.evaluate(initializer)?;
-        self.environment.define(name.lexeme.clone(), value);
+        self.environment.borrow().borrow_mut().define(name.lexeme.clone(), value);
         Ok(())
+    }
+
+
+
+    fn visit_block_stmt(&self, statements: &Vec<Box<Stmt>>) -> Result<(), RuntimeError>{
+        let env = Environment::new_enclosed(self.environment.borrow().clone());
+        self.execute_block(statements, env)?;
+        Ok(())
+    }
+
+    fn visit_if_stmt(&self, condition: &Box<Expr>, then_branch: &Box<Stmt>, else_branch: &Option<Box<Stmt>>) -> Result<(), RuntimeError>{
+        if self.evaluate(condition)?.is_truthy(){
+            Ok(self.execute(then_branch)?)
+        } else {
+            match else_branch{
+                Some(else_branch) => Ok(self.execute(else_branch)?),
+                None => Ok(()),
+            }
+        }
     }
 }

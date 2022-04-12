@@ -1,2 +1,5 @@
-var foo = 35 + 14;
-print foo;
+if (false){
+  print "true";
+} else{
+  print "false";
+}
