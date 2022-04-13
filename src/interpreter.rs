@@ -2,25 +2,54 @@
 
 use crate::environment::Environment;
 use crate::expr::{self, Expr};
+use crate::lox_callable::{LoxCallable};
+use crate::native_function::NativeFunction;
 use crate::stmt::{self, Stmt};
 use crate::lox_type::LoxValue::{self, *};
 use crate::token::{Token, TokenType::*};
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct RuntimeError{
     pub message: String,
     pub line: u32
 }   
 pub struct Interpreter{
+    //TODO: Refactor to use globals 
+    //This environment handling required massive abouts of indrection. 
+    //It is required becuase Rust's borrow checker is strict in that you can only have one mutable reference to a value
+    globals: Rc<RefCell<Environment>>,
     environment: RefCell<Rc<RefCell<Environment>>>
 }
 
 impl  Interpreter{
     pub fn new() -> Self {
+        //Pattern for handling environment references from: https://github.com/UncleScientist/lox-ast
+
+        let globals = Rc::new(RefCell::new(Environment::new()));
+        //Clone used on an Rc creates just another reference to the same data 
+        let environment = RefCell::new(globals.clone());
+
+        fn clock(_arguments: Vec<LoxValue>, _interpreter: &Interpreter) -> LoxValue{
+            //Code for clock from https://stackoverflow.com/questions/26593387/how-can-i-get-the-current-time-in-milliseconds
+            let start = SystemTime::now();
+            let since_the_epoch = start
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards");
+            LoxValue::Number(since_the_epoch.as_millis() as f64)
+        }
+
+        globals.borrow_mut().define("clock".to_string(), LoxValue::Native(
+            Rc::new(NativeFunction{
+                arity : 0,
+                function: clock
+            })
+        ));
+        
         Interpreter {  
-            //Pattern for handling environment references from: https://github.com/UncleScientist/lox-ast
-            environment : RefCell::new(Rc::new(RefCell::new(Environment::new())))
+            globals,
+            environment
         }
     }
     pub fn interpret(&mut self, statements : Vec<Box<Stmt>>) -> Result<(), RuntimeError>{    
@@ -50,6 +79,14 @@ impl  Interpreter{
 
     fn evaluate(&self, expr: &Box<Expr>) -> Result<LoxValue, RuntimeError> {
         expr.accept(self)
+    }
+
+    fn call_function(&self, func: &dyn LoxCallable, arguments: Vec<LoxValue>, paren: &Token) -> Result<LoxValue, RuntimeError>{
+        if arguments.len() != func.arity() as usize{
+            Err(error(paren, ["Expected ".to_string() , func.arity().to_string(), " arguments but got ".to_string(), arguments.len().to_string(), ".".to_string()].concat()))
+        } else{
+            Ok(func.call(self, arguments))
+        }
     }
 }
 
@@ -142,6 +179,22 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
             EQUAL_EQUAL => Ok(Boolean(left_eval == right_eval)),
             BANG_EQUAL => Ok(Boolean(left_eval != right_eval)),
             _ => Err(error(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
+        }
+    }
+
+
+    fn visit_call_expr(&self, callee: &Box<Expr>, paren : &Token, arguments : &Vec<Box<Expr>>) -> Result<LoxValue, RuntimeError>{
+        let callee_val = self.evaluate(callee)?;
+
+        let mut argument_vals = vec![];
+        for argument in arguments{
+            argument_vals.push(self.evaluate(argument)?);
+        }
+
+        match callee_val{
+            Function(func) => self.call_function(func.as_ref(), argument_vals, paren),
+            Native(func) => self.call_function(func.as_ref(), argument_vals, paren),
+            _ => Err(error(paren, "Can only call functions and classes.".to_string()))
         }
     }
 

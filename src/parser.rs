@@ -40,7 +40,9 @@ impl<'a> Parser<'a>{
         let statement = {
             if self.match_token(vec![VAR]){
                 self.var_declaration()
-            } else{
+            } else if self.match_token(vec![FUN]){
+                self.function("function".to_string())
+            } else {
                 self.statement()
             }
         };
@@ -241,6 +243,32 @@ impl<'a> Parser<'a>{
     }
 
 
+    pub fn function(&mut self, kind: String) -> Result<Box<Stmt<'a>>, ()>{   
+        let name = self.consume(IDENTIFIER, ["Expect ".to_string() , kind, " name.".to_string()].concat())?;
+        self.consume(LEFT_PAREN, ["Expect '(' after ".to_string() , kind, " name.".to_string()].concat())?;
+    
+        let mut params = vec![];
+        if !self.check(RIGHT_PAREN){
+            //The following is a do-while loop
+            while{
+                if params.len() >= 255{
+                    crate::error_token(self.peek(), "Can't have more than 255 parameters.".to_string());
+                    return Err(());
+                }
+                params.push(self.consume(IDENTIFIER, "Expect parameter name.".to_string())?);
+
+                self.match_token(vec![COMMA])
+            } {}
+            self.consume(RIGHT_PAREN, "Expect ')' after parameters.".to_string())?;
+        }
+
+        self.consume(LEFT_BRACE, ["Expect '{' before ".to_string(), kind, " body.".to_string()].concat())?;
+        let body = self.block()?;
+
+        Ok(Box::new(Stmt::Function { name, params, body }))
+    }
+
+
     fn expression(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
         self.assignment()   
     }
@@ -349,7 +377,45 @@ impl<'a> Parser<'a>{
             return Ok(Box::new(Expr::Unary { operator, right}));
         }
 
-        self.primary()
+        self.call()
+    }
+
+    fn call(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+        let mut expr = self.primary()?;
+
+        loop{
+            if self.match_token(vec![LEFT_PAREN]){
+                expr = self.finish_call(expr)?;       
+            } else{
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
+    fn finish_call(&mut self, callee: Box<Expr<'a>>) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+        let mut arguments = vec![];
+        if !self.check(RIGHT_PAREN){
+            //This is a very weird way to emulate a do-while loop from: https://gist.github.com/huonw/8435502 
+            //It works because the conditional of a while loop can be any expression
+            while { 
+                arguments.push(self.expression()?);
+                if arguments.len() >= 255{
+                    crate::error_token(self.peek(), "Can't have more than 255 arguments.".to_string());
+                    return Err(Box::new(Expr::Literal { value: LoxValue::Nil}));
+                };
+                self.match_token(vec![COMMA])
+            } {}
+        }
+
+        let paren = match self.consume(RIGHT_PAREN, "Expect ')' after arguments.".to_string()){
+            Ok(token) => token,
+            Err(()) => return Err(Box::new(Expr::Literal { value: LoxValue::Nil}))
+        };
+
+
+        Ok(Box::new(Expr::Call { callee, paren, arguments }))
     }
 
     fn primary(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{

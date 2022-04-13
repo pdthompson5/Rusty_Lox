@@ -8,7 +8,8 @@ pub enum Expr<'a> {
     Unary{operator: &'a Token, right: Box<Expr<'a>>},
     Variable{name: &'a Token},
     Assign{name: &'a Token, value: Box<Expr<'a>>},
-    Logical{left: Box<Expr<'a>>, operator: &'a Token, right: Box<Expr<'a>>}
+    Logical{left: Box<Expr<'a>>, operator: &'a Token, right: Box<Expr<'a>>},
+    Call{callee: Box<Expr<'a>>, paren: &'a Token, arguments: Vec<Box<Expr<'a>>>}
 }
 
 pub trait Visitor<T> {
@@ -19,6 +20,8 @@ pub trait Visitor<T> {
     fn visit_variable_expr(&self, name : &Token) -> T;
     fn visit_assign_expr(&self, name: &Token, value: &Box<Expr>) -> T;
     fn visit_logical_expr(&self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> T;
+    fn visit_call_expr(&self, callee: &Box<Expr>, paren : &Token, arguments : &Vec<Box<Expr>>) -> T;
+
 }
 
 impl<'a> Expr<'a>{
@@ -31,6 +34,7 @@ impl<'a> Expr<'a>{
             Self::Variable {name} => visitor.visit_variable_expr(name),
             Self::Assign {name, value} => visitor.visit_assign_expr(name, value),
             Self::Logical { left, operator, right} => visitor.visit_logical_expr(left, operator, right),
+            Self::Call { callee, paren, arguments} => visitor.visit_call_expr(callee, paren, arguments),
         }
     }
 }

@@ -1,10 +1,16 @@
 use std::fmt;
+use std::rc::Rc;
+
+use crate::native_function::NativeFunction;
+use crate::lox_function::LoxFunction;
 #[derive(Clone, PartialEq, Debug)]
 pub enum LoxValue{
     Boolean(bool),
     Number(f64),
     LoxString(String),
     Nil,
+    Function(Rc<LoxFunction>),
+    Native(Rc<NativeFunction>)
 }
 
 pub fn stringify_double(val: &f64) -> String{  
@@ -22,6 +28,9 @@ impl fmt::Display for LoxValue{
             Self::Number(val) => write!(f, "{}", stringify_double(val)),
             Self::LoxString(val) => write!(f, "{}", val),
             Self::Nil => write!(f, "nil"),
+            //Todo: Implment function printing
+            Self::Function(_func) => write!(f, "Function"),
+            Self::Native(_func) => write!(f, "Native Function")
         }           
     }
 }
@@ -36,6 +45,8 @@ impl LoxValue{
     }
 
 }
+
+
 
 
 

@@ -13,6 +13,9 @@ mod ast_printer;
 mod parser;
 mod stmt;
 mod environment;
+mod lox_callable;
+mod lox_function;
+mod native_function;
 
 
 
