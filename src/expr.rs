@@ -1,40 +1,41 @@
 use crate::token::Token;
 use crate::lox_type::LoxValue;
+use std::rc::Rc;
 //Exprs need to be boxed to avoid reccursive enums which Rust does not allow
-pub enum Expr<'a> {
-    Binary{left: Box<Expr<'a>>, operator: &'a Token, right: Box<Expr<'a>>}, 
-    Grouping{expression: Box<Expr<'a>>},
+pub enum Expr {
+    Binary{left: Rc<Expr>, operator: Token, right: Rc<Expr>}, 
+    Grouping{expression: Rc<Expr>},
     Literal{value: LoxValue},
-    Unary{operator: &'a Token, right: Box<Expr<'a>>},
-    Variable{name: &'a Token},
-    Assign{name: &'a Token, value: Box<Expr<'a>>},
-    Logical{left: Box<Expr<'a>>, operator: &'a Token, right: Box<Expr<'a>>},
-    Call{callee: Box<Expr<'a>>, paren: &'a Token, arguments: Vec<Box<Expr<'a>>>}
+    Unary{operator: Token, right: Rc<Expr>},
+    Variable{name: Token},
+    Assign{name: Token, value: Rc<Expr>},
+    Logical{left: Rc<Expr>, operator: Token, right: Rc<Expr>},
+    Call{callee: Rc<Expr>, paren: Token, arguments: Vec<Rc<Expr>>}
 }
 
 pub trait Visitor<T> {
-    fn visit_binary_expr(&self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> T;
-    fn visit_grouping_expr(&self, expression : &Box<Expr>) -> T;
+    fn visit_binary_expr(&self, left: Rc<Expr>, operator : &Token, right : Rc<Expr>) -> T;
+    fn visit_grouping_expr(&self, expression : Rc<Expr>) -> T;
     fn visit_literal_expr(&self, expr : &LoxValue) -> T;
-    fn visit_unary_expr(&self, operator : &Token, right : &Box<Expr>) -> T;
+    fn visit_unary_expr(&self, operator : &Token, right : Rc<Expr>) -> T;
     fn visit_variable_expr(&self, name : &Token) -> T;
-    fn visit_assign_expr(&self, name: &Token, value: &Box<Expr>) -> T;
-    fn visit_logical_expr(&self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> T;
-    fn visit_call_expr(&self, callee: &Box<Expr>, paren : &Token, arguments : &Vec<Box<Expr>>) -> T;
+    fn visit_assign_expr(&self, name: &Token, value: Rc<Expr>) -> T;
+    fn visit_logical_expr(&self, left: Rc<Expr>, operator : &Token, right : Rc<Expr>) -> T;
+    fn visit_call_expr(&self, callee: Rc<Expr>, paren : &Token, arguments : &Vec<Rc<Expr>>) -> T;
 
 }
 
-impl<'a> Expr<'a>{
+impl Expr{
     pub fn accept<T>(&self, visitor: &impl Visitor<T>) -> T{
         match self{
-            Self::Binary { left, operator, right} => visitor.visit_binary_expr(left, operator, right),
-            Self::Grouping { expression } => visitor.visit_grouping_expr(expression),
+            Self::Binary { left, operator, right} => visitor.visit_binary_expr(left.clone(), operator, right.clone()),
+            Self::Grouping { expression } => visitor.visit_grouping_expr(expression.clone()),
             Self::Literal { value } => visitor.visit_literal_expr(value),
-            Self::Unary { operator, right} => visitor.visit_unary_expr(operator, right),
+            Self::Unary { operator, right} => visitor.visit_unary_expr(operator, right.clone()),
             Self::Variable {name} => visitor.visit_variable_expr(name),
-            Self::Assign {name, value} => visitor.visit_assign_expr(name, value),
-            Self::Logical { left, operator, right} => visitor.visit_logical_expr(left, operator, right),
-            Self::Call { callee, paren, arguments} => visitor.visit_call_expr(callee, paren, arguments),
+            Self::Assign {name, value} => visitor.visit_assign_expr(name, value.clone()),
+            Self::Logical { left, operator, right} => visitor.visit_logical_expr(left.clone(), operator, right.clone()),
+            Self::Call { callee, paren, arguments} => visitor.visit_call_expr(callee.clone(), paren, arguments),
         }
     }
 }

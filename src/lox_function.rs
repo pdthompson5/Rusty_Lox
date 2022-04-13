@@ -7,7 +7,7 @@ use crate::stmt::Stmt;
 #[derive(Clone, PartialEq, Debug)]
 pub struct LoxFunction{
     arity: u32,
-    declaration: Rc<Stmt>
+    // declaration: Rc<Stmt>
 }
 //TODO: Instead of Boxes use RCs for everything so this is not an issue 
 

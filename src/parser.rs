@@ -2,6 +2,7 @@
 use crate::{token::{TokenType::{self, *}, Token}, lox_type::LoxValue};
 use crate::expr::Expr;
 use crate::stmt::Stmt;
+use std::rc::Rc;
 //The rampant lifetime annotations in the file are a result of a vicious wrestling match the the borrow checker. 
 //I am not sure how many are needed by this works
 //What they mean to me is that the expression returned by parse is only valid as long as the tokens vector is in scope.
@@ -36,7 +37,7 @@ impl<'a> Parser<'a>{
         }
     }
 
-    pub fn declaration(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+    pub fn declaration(&mut self) -> Result<Box<Stmt>, ()>{
         let statement = {
             if self.match_token(vec![VAR]){
                 self.var_declaration()
@@ -58,7 +59,7 @@ impl<'a> Parser<'a>{
 
 
     
-    pub fn var_declaration(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+    pub fn var_declaration(&mut self) -> Result<Box<Stmt>, ()>{
         let name = match self.consume(IDENTIFIER, "Expect variable name.".to_string()){
             Ok(identifier) => identifier,
             Err(()) => return Err(()) 
@@ -72,7 +73,7 @@ impl<'a> Parser<'a>{
                     Err(_expr) => return Err(())
                 }
             } else{
-                Box::new(Expr::Literal { value: LoxValue::Nil})
+                Rc::new(Expr::Literal { value: LoxValue::Nil})
             }
         };
 
@@ -84,7 +85,7 @@ impl<'a> Parser<'a>{
 
     }
 
-    pub fn while_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+    pub fn while_statement(&mut self) -> Result<Box<Stmt>, ()>{
         self.consume(LEFT_PAREN, "Expect '(' after 'while'.".to_string())?;
 
         let condition = match self.expression(){
@@ -99,7 +100,7 @@ impl<'a> Parser<'a>{
         Ok(Box::new(Stmt::While { condition, body }))
     }
 
-    pub fn statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+    pub fn statement(&mut self) -> Result<Box<Stmt>, ()>{
         if self.match_token(vec![FOR]){
             return self.for_statement()
         }
@@ -122,7 +123,7 @@ impl<'a> Parser<'a>{
         self.expression_statement()
     }
 
-    fn for_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+    fn for_statement(&mut self) -> Result<Box<Stmt>, ()>{
         self.consume(LEFT_PAREN, "Expect '(' after 'for'.".to_string())?;
 
         let initializer = 
@@ -165,7 +166,7 @@ impl<'a> Parser<'a>{
 
         let condition_expr = match condition{
             Some(expr) => expr,
-            None => Box::new(Expr::Literal { value: LoxValue::Boolean(true) })
+            None => Rc::new(Expr::Literal { value: LoxValue::Boolean(true) })
         };
 
         body = Box::new(Stmt::While{condition: condition_expr, body});
@@ -179,7 +180,7 @@ impl<'a> Parser<'a>{
 
     }
 
-    fn if_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+    fn if_statement(&mut self) -> Result<Box<Stmt>, ()>{
         self.consume(LEFT_PAREN, "Expect '(' after 'if'.".to_string())?;
 
         let condition = match self.expression(){
@@ -202,7 +203,7 @@ impl<'a> Parser<'a>{
     }
 
 
-    fn block(&mut self) -> Result<Vec<Box<Stmt<'a>>>, ()> {
+    fn block(&mut self) -> Result<Vec<Box<Stmt>>, ()> {
         let mut statements = vec![];
         
         while !self.check(RIGHT_BRACE) && !self.is_at_end(){
@@ -216,7 +217,7 @@ impl<'a> Parser<'a>{
         
     }
 
-    pub fn print_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+    pub fn print_statement(&mut self) -> Result<Box<Stmt>, ()>{
         let expression = match self.expression(){
             Ok(expr) => expr,
             Err(_expr) => return Err(()) 
@@ -229,7 +230,7 @@ impl<'a> Parser<'a>{
         }
     }
 
-    pub fn expression_statement(&mut self) -> Result<Box<Stmt<'a>>, ()>{
+    pub fn expression_statement(&mut self) -> Result<Box<Stmt>, ()>{
         let expression = match self.expression(){
             Ok(expr) => expr,
             Err(_expr) => return Err(()) 
@@ -243,16 +244,16 @@ impl<'a> Parser<'a>{
     }
 
 
-    pub fn function(&mut self, kind: String) -> Result<Box<Stmt<'a>>, ()>{   
-        let name = self.consume(IDENTIFIER, ["Expect ".to_string() , kind, " name.".to_string()].concat())?;
-        self.consume(LEFT_PAREN, ["Expect '(' after ".to_string() , kind, " name.".to_string()].concat())?;
+    pub fn function(&mut self, kind: String) -> Result<Box<Stmt>, ()>{   
+        let name = self.consume(IDENTIFIER, ["Expect ".to_string() , kind.clone(), " name.".to_string()].concat())?;
+        self.consume(LEFT_PAREN, ["Expect '(' after ".to_string() , kind.clone(), " name.".to_string()].concat())?;
     
         let mut params = vec![];
         if !self.check(RIGHT_PAREN){
             //The following is a do-while loop
             while{
                 if params.len() >= 255{
-                    crate::error_token(self.peek(), "Can't have more than 255 parameters.".to_string());
+                    crate::error_token(&self.peek(), "Can't have more than 255 parameters.".to_string());
                     return Err(());
                 }
                 params.push(self.consume(IDENTIFIER, "Expect parameter name.".to_string())?);
@@ -269,11 +270,11 @@ impl<'a> Parser<'a>{
     }
 
 
-    fn expression(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn expression(&mut self) -> Result<Rc<Expr>, ()>{
         self.assignment()   
     }
 
-    fn assignment(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn assignment(&mut self) -> Result<Rc<Expr>, ()>{
         let expr  = self.or()?;
 
         if self.match_token(vec![EQUAL]){
@@ -283,11 +284,11 @@ impl<'a> Parser<'a>{
             match expr.as_ref(){
                 //Make sure left side is L-value
                 Expr::Variable{name} => {
-                    Ok(Box::new(Expr::Assign { name , value}))
+                    Ok(Rc::new(Expr::Assign { name: name.clone() , value}))
                 },
                 _ => {
-                    crate::error_token(equals, "Invalid assignment target.".to_string());
-                    Err(Box::new(Expr::Literal { value: LoxValue::Nil}))
+                    crate::error_token(&equals, "Invalid assignment target.".to_string());
+                    Err(())
                 }
             }
 
@@ -297,25 +298,25 @@ impl<'a> Parser<'a>{
         }
     }
 
-    fn or(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn or(&mut self) -> Result<Rc<Expr>, ()>{
         let mut expr = self.and()?;
 
         while self.match_token(vec![OR]){
             let operator = self.previous();
             let right = self.and()?;
-            expr = Box::new(Expr::Logical { left: expr, operator, right});
+            expr = Rc::new(Expr::Logical { left: expr, operator, right});
         }   
 
         Ok(expr)
     }
 
-    fn and(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn and(&mut self) -> Result<Rc<Expr>, ()>{
         let mut expr = self.equality()?;
 
         while self.match_token(vec![AND]){
             let operator = self.previous();
             let right = self.equality()?;
-            expr = Box::new(Expr::Logical { left: expr, operator, right});
+            expr = Rc::new(Expr::Logical { left: expr, operator, right});
         }
 
         Ok(expr)
@@ -324,63 +325,63 @@ impl<'a> Parser<'a>{
     
 
     //I think that I need to show that the return value won't have the mutable self refernce in it 
-    fn equality(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn equality(&mut self) -> Result<Rc<Expr>, ()>{
         let mut expr = self.comparison()?;
 
         while self.match_token(vec![BANG_EQUAL, EQUAL_EQUAL]){
             let operator = self.previous().to_owned();
             let right = self.comparison()?;
-            expr = Box::new(Expr::Binary { left: expr, operator, right});
+            expr = Rc::new(Expr::Binary { left: expr, operator, right});
         }
        Ok(expr)
     }
 
-    fn comparison(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn comparison(&mut self) -> Result<Rc<Expr>, ()>{
         let mut expr = self.term()?;
 
         while self.match_token(vec![GREATER, GREATER_EQUAL, LESS, LESS_EQUAL]){
             let operator = self.previous();
             let right = self.term()?;
-            expr = Box::new(Expr::Binary{ left: expr, operator, right});
+            expr = Rc::new(Expr::Binary{ left: expr, operator, right});
         };
         Ok(expr)
     }   
 
 
-    fn term(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn term(&mut self) -> Result<Rc<Expr>, ()>{
         let mut expr = self.factor()?;
         
         while self.match_token(vec![MINUS, PLUS]){
             let operator = self.previous();
             let right = self.factor()?;
-            expr = Box::new(Expr::Binary { left: expr, operator, right});
+            expr = Rc::new(Expr::Binary { left: expr, operator, right});
         };
 
         Ok(expr)
     }
 
-    fn factor(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn factor(&mut self) -> Result<Rc<Expr>, ()>{
         let mut expr = self.unary()?;
 
         while self.match_token(vec![SLASH, STAR]) {
             let operator = self.previous();
             let right = self.unary()?;
-            expr = Box::new(Expr::Binary { left:expr, operator, right});
+            expr = Rc::new(Expr::Binary { left:expr, operator, right});
         };
         Ok(expr)
     }
 
-    fn unary(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn unary(&mut self) -> Result<Rc<Expr>, ()>{
         if self.match_token(vec![BANG, MINUS]){
             let operator = self.previous();
             let right = self.unary()?;
-            return Ok(Box::new(Expr::Unary { operator, right}));
+            return Ok(Rc::new(Expr::Unary { operator, right}));
         }
 
         self.call()
     }
 
-    fn call(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn call(&mut self) -> Result<Rc<Expr>, ()>{
         let mut expr = self.primary()?;
 
         loop{
@@ -394,7 +395,7 @@ impl<'a> Parser<'a>{
         Ok(expr)
     }
 
-    fn finish_call(&mut self, callee: Box<Expr<'a>>) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn finish_call(&mut self, callee: Rc<Expr>) -> Result<Rc<Expr>, ()>{
         let mut arguments = vec![];
         if !self.check(RIGHT_PAREN){
             //This is a very weird way to emulate a do-while loop from: https://gist.github.com/huonw/8435502 
@@ -402,8 +403,8 @@ impl<'a> Parser<'a>{
             while { 
                 arguments.push(self.expression()?);
                 if arguments.len() >= 255{
-                    crate::error_token(self.peek(), "Can't have more than 255 arguments.".to_string());
-                    return Err(Box::new(Expr::Literal { value: LoxValue::Nil}));
+                    crate::error_token(&self.peek(), "Can't have more than 255 arguments.".to_string());
+                    return Err(());
                 };
                 self.match_token(vec![COMMA])
             } {}
@@ -411,46 +412,46 @@ impl<'a> Parser<'a>{
 
         let paren = match self.consume(RIGHT_PAREN, "Expect ')' after arguments.".to_string()){
             Ok(token) => token,
-            Err(()) => return Err(Box::new(Expr::Literal { value: LoxValue::Nil}))
+            Err(()) => return Err(())
         };
 
 
-        Ok(Box::new(Expr::Call { callee, paren, arguments }))
+        Ok(Rc::new(Expr::Call { callee, paren, arguments }))
     }
 
-    fn primary(&mut self) -> Result<Box<Expr<'a>>, Box<Expr<'a>>>{
+    fn primary(&mut self) -> Result<Rc<Expr>, ()>{
         if self.match_token(vec![FALSE]){
-            return Ok(Box::new(Expr::Literal { value: LoxValue::Boolean(false)}));
+            return Ok(Rc::new(Expr::Literal { value: LoxValue::Boolean(false)}));
         }
         if self.match_token(vec![TRUE]){
-            return Ok(Box::new(Expr::Literal { value: LoxValue::Boolean(true)}));
+            return Ok(Rc::new(Expr::Literal { value: LoxValue::Boolean(true)}));
         }
         if self.match_token(vec![NIL]){
-            return Ok(Box::new(Expr::Literal { value: LoxValue::Nil}));
+            return Ok(Rc::new(Expr::Literal { value: LoxValue::Nil}));
         }
 
         if self.match_token(vec![NUMBER, STRING]){
-            return Ok(Box::new(Expr::Literal { value: self.previous().literal.clone() }));
+            return Ok(Rc::new(Expr::Literal { value: self.previous().literal.clone() }));
         }
 
         if self.match_token(vec![IDENTIFIER]){
-            return Ok(Box::new(Expr::Variable { name: self.previous() }))
+            return Ok(Rc::new(Expr::Variable { name: self.previous() }))
         }
         
         if self.match_token(vec![LEFT_PAREN]){
             let expr = self.expression()?;
             if let Err(()) = self.consume(RIGHT_PAREN, "Expect ')' after expression".to_string()){
-                return Err(Box::new(Expr::Literal { value: LoxValue::Nil}));
+                return Err(());
             } else{
-                return Ok(Box::new(Expr::Grouping { expression: expr }));
+                return Ok(Rc::new(Expr::Grouping { expression: expr }));
             };
         }
         
         //No expression matched
-        crate::error_token(self.peek(), "Expect Expression".to_string()); // report error
+        crate::error_token(&self.peek(), "Expect Expression".to_string()); // report error
         //An expression must be returned so just return Nil. The value of the expression should never be used.
         //TODO: Determine if this is true
-        Err(Box::new(Expr::Literal { value: LoxValue::Nil}))
+        Err(())
     }
 
 
@@ -472,7 +473,7 @@ impl<'a> Parser<'a>{
         self.peek().kind == token_type
     }
 
-    fn advance(&mut self) -> &'a Token{
+    fn advance(&mut self) -> Token{
         if !self.is_at_end(){
             self.current += 1;
         }
@@ -484,20 +485,20 @@ impl<'a> Parser<'a>{
         self.peek().kind == EOF
     }
 
-    fn peek(&mut self) -> &'a Token{
-        self.tokens.get(self.current as usize).unwrap()
+    fn peek(&mut self) -> Token{
+        self.tokens.get(self.current as usize).unwrap().clone()
     }
 
-    fn previous(&mut self) -> &'a Token{
-        self.tokens.get((self.current-1) as usize).unwrap()
+    fn previous(&mut self) -> Token{
+        self.tokens.get((self.current-1) as usize).unwrap().clone()
     }
 
     //My consume function differs from the author's because Rust does not include exceptions 
-    fn consume(&mut self, token_type: TokenType, message: String) -> Result<&'a Token, ()>{
+    fn consume(&mut self, token_type: TokenType, message: String) -> Result<Token, ()>{
         if self.check(token_type){
             Ok(self.advance())
         } else{
-            crate::error_token(self.peek(), message);
+            crate::error_token(&self.peek(), message);
             Err(())
         }        
     }

@@ -77,7 +77,7 @@ impl  Interpreter{
         Ok(())
     }
 
-    fn evaluate(&self, expr: &Box<Expr>) -> Result<LoxValue, RuntimeError> {
+    fn evaluate(&self, expr: Rc<Expr>) -> Result<LoxValue, RuntimeError> {
         expr.accept(self)
     }
 
@@ -104,7 +104,7 @@ fn invalid_operand_number(operator: &Token) -> RuntimeError{
 
 impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
 
-    fn visit_binary_expr(&self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
+    fn visit_binary_expr(&self, left: Rc<Expr>, operator : &Token, right : Rc<Expr>) -> Result<LoxValue, RuntimeError>{
         let left_eval = self.evaluate(left)?;
         let right_eval = self.evaluate(right)?;
 
@@ -183,12 +183,12 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
     }
 
 
-    fn visit_call_expr(&self, callee: &Box<Expr>, paren : &Token, arguments : &Vec<Box<Expr>>) -> Result<LoxValue, RuntimeError>{
+    fn visit_call_expr(&self, callee: Rc<Expr>, paren : &Token, arguments : &Vec<Rc<Expr>>) -> Result<LoxValue, RuntimeError>{
         let callee_val = self.evaluate(callee)?;
 
         let mut argument_vals = vec![];
         for argument in arguments{
-            argument_vals.push(self.evaluate(argument)?);
+            argument_vals.push(self.evaluate(argument.clone())?);
         }
 
         match callee_val{
@@ -198,7 +198,7 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
         }
     }
 
-    fn visit_grouping_expr(&self, expression : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
+    fn visit_grouping_expr(&self, expression : Rc<Expr>) -> Result<LoxValue, RuntimeError>{
         self.evaluate(expression)
     }
 
@@ -206,7 +206,7 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
         Ok(value.clone())
     }
 
-    fn visit_logical_expr(&self, left: &Box<Expr>, operator : &Token, right : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
+    fn visit_logical_expr(&self, left: Rc<Expr>, operator : &Token, right : Rc<Expr>) -> Result<LoxValue, RuntimeError>{
         let left = self.evaluate(left)?;
 
         if let OR = operator.kind{
@@ -222,7 +222,7 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
         self.evaluate(right)
     }
 
-    fn visit_unary_expr(&self, operator : &Token, expression : &Box<Expr>) -> Result<LoxValue, RuntimeError>{
+    fn visit_unary_expr(&self, operator : &Token, expression : Rc<Expr>) -> Result<LoxValue, RuntimeError>{
         let right = self.evaluate(expression)?;
 
         match operator.kind {
@@ -240,7 +240,7 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
         self.environment.borrow().borrow().get(name)
     }
 
-    fn visit_assign_expr(&self, name: &Token, value: &Box<Expr>) -> Result<LoxValue, RuntimeError> {
+    fn visit_assign_expr(&self, name: &Token, value: Rc<Expr>) -> Result<LoxValue, RuntimeError> {
         let value = self.evaluate(value)?;
         self.environment.borrow().borrow_mut().assign(name, &value)?;
         Ok(value)
@@ -250,14 +250,14 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
 
 
 impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
-    fn visit_expression_stmt(&self, expression: &Box<Expr>) -> Result<(), RuntimeError>{
+    fn visit_expression_stmt(&self, expression: Rc<Expr>) -> Result<(), RuntimeError>{
         match self.evaluate(expression){
             Ok(_val) => Ok(()),
             Err(error) => Err(error),
         }
     }
 
-    fn visit_print_stmt(&self, expression: &Box<Expr>) -> Result<(), RuntimeError>{
+    fn visit_print_stmt(&self, expression: Rc<Expr>) -> Result<(), RuntimeError>{
         match self.evaluate(expression){
             Ok(val) => {
                 println!("{}", val);
@@ -267,15 +267,15 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
         }
     }
 
-    fn visit_var_stmt(&self, name: &Token, initializer: &Box<Expr>) -> Result<(), RuntimeError>{
+    fn visit_var_stmt(&self, name: &Token, initializer: Rc<Expr>) -> Result<(), RuntimeError>{
         //initializer can always be evaluated becuase if it is empty it is a literal nil expression
         let value = self.evaluate(initializer)?;
         self.environment.borrow().borrow_mut().define(name.lexeme.clone(), value);
         Ok(())
     }
 
-    fn visit_while_stmt(&self, condition: &Box<Expr>, body: &Box<Stmt>) -> Result<(), RuntimeError>{
-        while self.evaluate(condition)?.is_truthy(){
+    fn visit_while_stmt(&self, condition: Rc<Expr>, body: &Box<Stmt>) -> Result<(), RuntimeError>{
+        while self.evaluate(condition.clone())?.is_truthy(){
             self.execute(body)?;
         }
         Ok(())
@@ -289,7 +289,7 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
         Ok(())
     }
 
-    fn visit_if_stmt(&self, condition: &Box<Expr>, then_branch: &Box<Stmt>, else_branch: &Option<Box<Stmt>>) -> Result<(), RuntimeError>{
+    fn visit_if_stmt(&self, condition: Rc<Expr>, then_branch: &Box<Stmt>, else_branch: &Option<Box<Stmt>>) -> Result<(), RuntimeError>{
         if self.evaluate(condition)?.is_truthy(){
             Ok(self.execute(then_branch)?)
         } else {
@@ -298,5 +298,9 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
                 None => Ok(()),
             }
         }
+    }
+
+    fn visit_function_stmt(&self, name: &Token, params: &Vec<Token>, body: &Vec<Box<Stmt>>) -> Result<(), RuntimeError> {
+        todo!()
     }
 }
