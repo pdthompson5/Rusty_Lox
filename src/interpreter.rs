@@ -16,8 +16,7 @@ pub struct RuntimeError{
     pub line: u32
 }   
 pub struct Interpreter{
-    //TODO: Refactor to use globals 
-    //This environment handling required massive abouts of indrection. 
+    //This environment handling required massive amounts of indrection. 
     //It is required becuase Rust's borrow checker is strict in that you can only have one mutable reference to a value
     globals: Rc<RefCell<Environment>>,
     environment: RefCell<Rc<RefCell<Environment>>>
@@ -52,9 +51,9 @@ impl  Interpreter{
             environment
         }
     }
-    pub fn interpret(&mut self, statements : Vec<Box<Stmt>>) -> Result<(), RuntimeError>{    
+    pub fn interpret(&mut self, statements : Vec<Rc<Stmt>>) -> Result<(), RuntimeError>{    
         for statement in statements{
-            match self.execute(&statement){
+            match self.execute(statement){
                 Ok(()) => (),
                 Err(error) => return Err(error),
             }
@@ -62,15 +61,15 @@ impl  Interpreter{
         Ok(())
     }
 
-    fn execute(&self, stmt : &Box<Stmt>) -> Result<(), RuntimeError>{
+    fn execute(&self, stmt : Rc<Stmt>) -> Result<(), RuntimeError>{
         stmt.accept(self)
     }
 
-    fn execute_block(&self, statements: &Vec<Box<Stmt>>, environment : Environment) -> Result<(), RuntimeError>{
+    fn execute_block(&self, statements: &Vec<Rc<Stmt>>, environment : Environment) -> Result<(), RuntimeError>{
         let previous = self.environment.replace(Rc::new(RefCell::new(environment)));
         
         for statement in statements{
-            self.execute(statement)?;
+            self.execute(statement.clone())?;
         }
 
         self.environment.replace(previous);
@@ -267,40 +266,40 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
         }
     }
 
-    fn visit_var_stmt(&self, name: &Token, initializer: Rc<Expr>) -> Result<(), RuntimeError>{
+    fn visit_var_stmt(&self, name: Token, initializer: Rc<Expr>) -> Result<(), RuntimeError>{
         //initializer can always be evaluated becuase if it is empty it is a literal nil expression
         let value = self.evaluate(initializer)?;
         self.environment.borrow().borrow_mut().define(name.lexeme.clone(), value);
         Ok(())
     }
 
-    fn visit_while_stmt(&self, condition: Rc<Expr>, body: &Box<Stmt>) -> Result<(), RuntimeError>{
+    fn visit_while_stmt(&self, condition: Rc<Expr>, body: Rc<Stmt>) -> Result<(), RuntimeError>{
         while self.evaluate(condition.clone())?.is_truthy(){
-            self.execute(body)?;
+            self.execute(body.clone())?;
         }
         Ok(())
     }
 
 
 
-    fn visit_block_stmt(&self, statements: &Vec<Box<Stmt>>) -> Result<(), RuntimeError>{
+    fn visit_block_stmt(&self, statements: &Vec<Rc<Stmt>>) -> Result<(), RuntimeError>{
         let env = Environment::new_enclosed(self.environment.borrow().clone());
         self.execute_block(statements, env)?;
         Ok(())
     }
 
-    fn visit_if_stmt(&self, condition: Rc<Expr>, then_branch: &Box<Stmt>, else_branch: &Option<Box<Stmt>>) -> Result<(), RuntimeError>{
+    fn visit_if_stmt(&self, condition: Rc<Expr>, then_branch: Rc<Stmt>, else_branch: &Option<Rc<Stmt>>) -> Result<(), RuntimeError>{
         if self.evaluate(condition)?.is_truthy(){
             Ok(self.execute(then_branch)?)
         } else {
             match else_branch{
-                Some(else_branch) => Ok(self.execute(else_branch)?),
+                Some(else_branch) => Ok(self.execute(else_branch.clone())?),
                 None => Ok(()),
             }
         }
     }
 
-    fn visit_function_stmt(&self, name: &Token, params: &Vec<Token>, body: &Vec<Box<Stmt>>) -> Result<(), RuntimeError> {
+    fn visit_function_stmt(&self, name: Token, params: &Vec<Token>, body: &Vec<Rc<Stmt>>) -> Result<(), RuntimeError> {
         todo!()
     }
 }

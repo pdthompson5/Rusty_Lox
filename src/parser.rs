@@ -20,8 +20,8 @@ impl<'a> Parser<'a>{
         }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Box<Stmt>>, ()>{
-        let mut statements : Vec<Box<Stmt>> = vec![];
+    pub fn parse(&mut self) -> Result<Vec<Rc<Stmt>>, ()>{
+        let mut statements : Vec<Rc<Stmt>> = vec![];
         let mut had_error = false;
         while !self.is_at_end(){
             match self.declaration(){
@@ -37,7 +37,7 @@ impl<'a> Parser<'a>{
         }
     }
 
-    pub fn declaration(&mut self) -> Result<Box<Stmt>, ()>{
+    pub fn declaration(&mut self) -> Result<Rc<Stmt>, ()>{
         let statement = {
             if self.match_token(vec![VAR]){
                 self.var_declaration()
@@ -59,7 +59,7 @@ impl<'a> Parser<'a>{
 
 
     
-    pub fn var_declaration(&mut self) -> Result<Box<Stmt>, ()>{
+    pub fn var_declaration(&mut self) -> Result<Rc<Stmt>, ()>{
         let name = match self.consume(IDENTIFIER, "Expect variable name.".to_string()){
             Ok(identifier) => identifier,
             Err(()) => return Err(()) 
@@ -80,12 +80,12 @@ impl<'a> Parser<'a>{
         if let Err(()) = self.consume(SEMICOLON, "Expect ';' after variable declaration.".to_string()){
             Err(())
         } else{
-            Ok(Box::new(Stmt::Var { name, initializer }))
+            Ok(Rc::new(Stmt::Var { name, initializer }))
         }
 
     }
 
-    pub fn while_statement(&mut self) -> Result<Box<Stmt>, ()>{
+    pub fn while_statement(&mut self) -> Result<Rc<Stmt>, ()>{
         self.consume(LEFT_PAREN, "Expect '(' after 'while'.".to_string())?;
 
         let condition = match self.expression(){
@@ -97,10 +97,10 @@ impl<'a> Parser<'a>{
 
         let body = self.statement()?;
 
-        Ok(Box::new(Stmt::While { condition, body }))
+        Ok(Rc::new(Stmt::While { condition, body }))
     }
 
-    pub fn statement(&mut self) -> Result<Box<Stmt>, ()>{
+    pub fn statement(&mut self) -> Result<Rc<Stmt>, ()>{
         if self.match_token(vec![FOR]){
             return self.for_statement()
         }
@@ -115,7 +115,7 @@ impl<'a> Parser<'a>{
         }
         if self.match_token(vec![LEFT_BRACE]){
            match self.block(){
-               Ok(statements) => return Ok(Box::new(Stmt::Block { statements })),
+               Ok(statements) => return Ok(Rc::new(Stmt::Block { statements })),
                Err(()) => return Err(())
            }
         }
@@ -123,7 +123,7 @@ impl<'a> Parser<'a>{
         self.expression_statement()
     }
 
-    fn for_statement(&mut self) -> Result<Box<Stmt>, ()>{
+    fn for_statement(&mut self) -> Result<Rc<Stmt>, ()>{
         self.consume(LEFT_PAREN, "Expect '(' after 'for'.".to_string())?;
 
         let initializer = 
@@ -160,7 +160,7 @@ impl<'a> Parser<'a>{
         let mut body = self.statement()?;
 
         body = match increment {
-            Some(expr) => Box::new(Stmt::Block { statements: vec![body, Box::new(Stmt::Expression { expression: expr })]}),
+            Some(expr) => Rc::new(Stmt::Block { statements: vec![body, Rc::new(Stmt::Expression { expression: expr })]}),
             None => body
         };
 
@@ -169,10 +169,10 @@ impl<'a> Parser<'a>{
             None => Rc::new(Expr::Literal { value: LoxValue::Boolean(true) })
         };
 
-        body = Box::new(Stmt::While{condition: condition_expr, body});
+        body = Rc::new(Stmt::While{condition: condition_expr, body});
 
         body = match initializer{
-            Some(stmt) => Box::new(Stmt::Block { statements: vec![stmt, body] }),
+            Some(stmt) => Rc::new(Stmt::Block { statements: vec![stmt, body] }),
             None => body
         };
 
@@ -180,7 +180,7 @@ impl<'a> Parser<'a>{
 
     }
 
-    fn if_statement(&mut self) -> Result<Box<Stmt>, ()>{
+    fn if_statement(&mut self) -> Result<Rc<Stmt>, ()>{
         self.consume(LEFT_PAREN, "Expect '(' after 'if'.".to_string())?;
 
         let condition = match self.expression(){
@@ -199,11 +199,11 @@ impl<'a> Parser<'a>{
             }
         };
 
-        Ok(Box::new(Stmt::If { condition, then_branch, else_branch}))
+        Ok(Rc::new(Stmt::If { condition, then_branch, else_branch}))
     }
 
 
-    fn block(&mut self) -> Result<Vec<Box<Stmt>>, ()> {
+    fn block(&mut self) -> Result<Vec<Rc<Stmt>>, ()> {
         let mut statements = vec![];
         
         while !self.check(RIGHT_BRACE) && !self.is_at_end(){
@@ -217,7 +217,7 @@ impl<'a> Parser<'a>{
         
     }
 
-    pub fn print_statement(&mut self) -> Result<Box<Stmt>, ()>{
+    pub fn print_statement(&mut self) -> Result<Rc<Stmt>, ()>{
         let expression = match self.expression(){
             Ok(expr) => expr,
             Err(_expr) => return Err(()) 
@@ -226,11 +226,11 @@ impl<'a> Parser<'a>{
         if let Err(()) = self.consume(SEMICOLON, "Expect ';' after value".to_string()){
             Err(())
         } else{
-            Ok(Box::new(Stmt::Print { expression }))
+            Ok(Rc::new(Stmt::Print { expression }))
         }
     }
 
-    pub fn expression_statement(&mut self) -> Result<Box<Stmt>, ()>{
+    pub fn expression_statement(&mut self) -> Result<Rc<Stmt>, ()>{
         let expression = match self.expression(){
             Ok(expr) => expr,
             Err(_expr) => return Err(()) 
@@ -239,12 +239,12 @@ impl<'a> Parser<'a>{
         if let Err(()) = self.consume(SEMICOLON, "Expect ';' after value".to_string()){
             Err(())
         } else{
-            Ok(Box::new(Stmt::Expression { expression }))
+            Ok(Rc::new(Stmt::Expression { expression }))
         }        
     }
 
 
-    pub fn function(&mut self, kind: String) -> Result<Box<Stmt>, ()>{   
+    pub fn function(&mut self, kind: String) -> Result<Rc<Stmt>, ()>{   
         let name = self.consume(IDENTIFIER, ["Expect ".to_string() , kind.clone(), " name.".to_string()].concat())?;
         self.consume(LEFT_PAREN, ["Expect '(' after ".to_string() , kind.clone(), " name.".to_string()].concat())?;
     
@@ -266,7 +266,7 @@ impl<'a> Parser<'a>{
         self.consume(LEFT_BRACE, ["Expect '{' before ".to_string(), kind, " body.".to_string()].concat())?;
         let body = self.block()?;
 
-        Ok(Box::new(Stmt::Function { name, params, body }))
+        Ok(Rc::new(Stmt::Function { name, params, body }))
     }
 
 
@@ -519,9 +519,4 @@ impl<'a> Parser<'a>{
             self.advance();
         }
     }
-
-
-
-
-
 }

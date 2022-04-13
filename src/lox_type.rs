@@ -29,8 +29,8 @@ impl fmt::Display for LoxValue{
             Self::LoxString(val) => write!(f, "{}", val),
             Self::Nil => write!(f, "nil"),
             //Todo: Implment function printing
-            Self::Function(_func) => write!(f, "Function"),
-            Self::Native(_func) => write!(f, "Native Function")
+            Self::Function(func) => write!(f, "{:?}", func),
+            Self::Native(func) => write!(f, "{:?}", func)
         }           
     }
 }
