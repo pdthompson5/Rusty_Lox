@@ -1,4 +1,4 @@
-use crate::interpreter::{Interpreter};
+use crate::interpreter::{Interpreter, RuntimeError};
 use crate::lox_type::LoxValue;
 use crate::lox_callable::LoxCallable;
 use std::fmt;
@@ -15,8 +15,8 @@ impl LoxCallable for NativeFunction{
         self.arity
     }
 
-    fn call(&self, interpreter: &Interpreter, arguments: Vec<LoxValue>) -> LoxValue{
-        (self.function)(arguments, interpreter)   
+    fn call(&self, interpreter: &Interpreter, arguments: Vec<LoxValue>) -> Result<LoxValue, RuntimeError>{
+        Ok((self.function)(arguments, interpreter))   
     }
 }
 
@@ -29,7 +29,6 @@ impl PartialEq for NativeFunction {
     }
 }
 
-//TODO: Determine if I want to print more. Realistically there is little use case to print a native function
 impl fmt::Debug for NativeFunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "<native fn>")

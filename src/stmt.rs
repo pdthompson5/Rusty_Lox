@@ -18,7 +18,7 @@ pub trait Visitor<T> {
     fn visit_block_stmt(&self, statements: &Vec<Rc<Stmt>>) -> T;
     fn visit_if_stmt(&self, condition: Rc<Expr>, then_branch: Rc<Stmt>, else_branch: &Option<Rc<Stmt>>) -> T;
     fn visit_while_stmt(&self, condition: Rc<Expr>, body: Rc<Stmt>) -> T;
-    fn visit_function_stmt(&self, name: Token, params: &Vec<Token>, body: &Vec<Rc<Stmt>>) -> T;
+    fn visit_function_stmt(&self, name: Token, params: Vec<Token>, body: Vec<Rc<Stmt>>) -> T;
 }
 
 impl Stmt{
@@ -30,8 +30,7 @@ impl Stmt{
             Self::Block {statements} => visitor.visit_block_stmt(statements), 
             Self::If {condition, then_branch, else_branch} => visitor.visit_if_stmt(condition.clone(), then_branch.clone(), else_branch),
             Self::While {condition, body} => visitor.visit_while_stmt(condition.clone(), body.clone()),
-            Self::Function {name, params, body} => visitor.visit_function_stmt(name.clone(), params, body),
-
+            Self::Function {name, params, body} => visitor.visit_function_stmt(name.clone(), params.clone(), body.clone()),
         }
     }
 }

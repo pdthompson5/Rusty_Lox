@@ -3,6 +3,7 @@
 use crate::environment::Environment;
 use crate::expr::{self, Expr};
 use crate::lox_callable::{LoxCallable};
+use crate::lox_function::LoxFunction;
 use crate::native_function::NativeFunction;
 use crate::stmt::{self, Stmt};
 use crate::lox_type::LoxValue::{self, *};
@@ -18,7 +19,7 @@ pub struct RuntimeError{
 pub struct Interpreter{
     //This environment handling required massive amounts of indrection. 
     //It is required becuase Rust's borrow checker is strict in that you can only have one mutable reference to a value
-    globals: Rc<RefCell<Environment>>,
+    pub globals: Rc<RefCell<Environment>>,
     environment: RefCell<Rc<RefCell<Environment>>>
 }
 
@@ -65,7 +66,7 @@ impl  Interpreter{
         stmt.accept(self)
     }
 
-    fn execute_block(&self, statements: &Vec<Rc<Stmt>>, environment : Environment) -> Result<(), RuntimeError>{
+    pub fn execute_block(&self, statements: &Vec<Rc<Stmt>>, environment : Environment) -> Result<(), RuntimeError>{
         let previous = self.environment.replace(Rc::new(RefCell::new(environment)));
         
         for statement in statements{
@@ -84,7 +85,7 @@ impl  Interpreter{
         if arguments.len() != func.arity() as usize{
             Err(error(paren, ["Expected ".to_string() , func.arity().to_string(), " arguments but got ".to_string(), arguments.len().to_string(), ".".to_string()].concat()))
         } else{
-            Ok(func.call(self, arguments))
+            func.call(self, arguments)
         }
     }
 }
@@ -299,7 +300,14 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
         }
     }
 
-    fn visit_function_stmt(&self, name: Token, params: &Vec<Token>, body: &Vec<Rc<Stmt>>) -> Result<(), RuntimeError> {
-        todo!()
+    fn visit_function_stmt(&self, name: Token, params: Vec<Token>, body: Vec<Rc<Stmt>>) -> Result<(), RuntimeError> {
+        let func = LoxFunction{
+            arity: params.len() as u32,
+            declaration: Rc::new(Stmt::Function { name: name.clone(), params, body })
+        };
+
+        self.environment.borrow().borrow_mut().define(name.lexeme, Function(Rc::new(func)));
+        
+        Ok(())
     }
 }

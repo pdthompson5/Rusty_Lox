@@ -1,5 +1,6 @@
 use std::rc::Rc;
-use crate::interpreter::Interpreter;
+use crate::environment::Environment;
+use crate::interpreter::{Interpreter, RuntimeError};
 use crate::lox_type::LoxValue;
 use crate::lox_callable::LoxCallable;
 use crate::stmt::Stmt;
@@ -7,10 +8,9 @@ use std::fmt;
 
 #[derive(Clone)]
 pub struct LoxFunction{
-    arity: u32,
-    declaration: Rc<Stmt>
+    pub arity: u32,
+    pub declaration: Rc<Stmt>
 }
-//TODO: Instead of Boxes use RCs for everything so this is not an issue 
 
 
 impl LoxCallable for LoxFunction{
@@ -18,9 +18,23 @@ impl LoxCallable for LoxFunction{
         self.arity
     }
 
-    fn call(&self, interpreter: &Interpreter, arguments: Vec<LoxValue>) -> LoxValue{
+    fn call(&self, interpreter: &Interpreter, arguments: Vec<LoxValue>) -> Result<LoxValue, RuntimeError>{
         //TODO: Impl
-        LoxValue::Nil
+
+        let mut environment = Environment::new_enclosed(interpreter.globals.clone());
+
+        match self.declaration.as_ref(){
+            Stmt::Function { name: _, params, body } =>{
+                for i in 0..params.len(){
+                    environment.define(params.get(i).unwrap().lexeme.clone(), 
+                        arguments.get(i).unwrap().clone());
+                }
+        
+                interpreter.execute_block(&body, environment)?;
+                Ok(LoxValue::Nil)
+            },
+            _ => Err(RuntimeError { message: "Error in Parsing: Nonfunction statement in LoxFunction".to_string(), line: 0 })
+        }
     }
 
 }
@@ -33,7 +47,6 @@ impl PartialEq for LoxFunction {
     }
 }
 
-//TODO: Determine if I want to print more. Realistically there is little use case to print a native function
 impl fmt::Debug for LoxFunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.declaration.as_ref(){
