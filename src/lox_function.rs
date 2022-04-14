@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 use crate::environment::Environment;
 use crate::interpreter::{Interpreter, RuntimeError};
@@ -9,7 +10,8 @@ use std::fmt;
 #[derive(Clone)]
 pub struct LoxFunction{
     pub arity: u32,
-    pub declaration: Rc<Stmt>
+    pub declaration: Rc<Stmt>,
+    pub closure: Rc<RefCell<Environment>>
 }
 
 
@@ -19,8 +21,8 @@ impl LoxCallable for LoxFunction{
     }
 
     fn call(&self, interpreter: &Interpreter, arguments: Vec<LoxValue>) -> Result<LoxValue, RuntimeError>{
-        //Todo: This line is the issue I think. I'm enclosing the global env? No, that should be right
-        let mut environment = Environment::new_enclosed(interpreter.globals.clone());
+        //In order to implement closures we need to deep copy an environment 
+        let mut environment = Environment::new_enclosed(self.closure.clone());
 
         match self.declaration.as_ref(){
             Stmt::Function { name: _, params, body } =>{

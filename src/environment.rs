@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 //TODO: I think the issue is that the enclosing is itself
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Environment{
     values : HashMap<String, LoxValue>,
     pub enclosing: Option<Rc<RefCell<Environment>>>

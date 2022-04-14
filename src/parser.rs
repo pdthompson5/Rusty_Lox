@@ -277,9 +277,8 @@ impl<'a> Parser<'a>{
 
                 self.match_token(vec![COMMA])
             } {}
-            self.consume(RIGHT_PAREN, "Expect ')' after parameters.".to_string())?;
         }
-
+        self.consume(RIGHT_PAREN, "Expect ')' after parameters.".to_string())?;
         self.consume(LEFT_BRACE, ["Expect '{' before ".to_string(), kind, " body.".to_string()].concat())?;
         let body = self.block()?;
 

@@ -1,20 +1,10 @@
-fun fib(n) {
-  if (n <= 1) return n;
-  return fib(n - 2) + fib(n - 1);
+var a = "global";
+{
+  fun showA() {
+    print a;
+  }
+
+  showA();
+  var a = "block";
+  showA();
 }
-
-for (var i = 0; i < 37; i = i + 1) {
-  print(i);
-  print(fib(i));
-}
-
-// fun rec(n){
-//   if(n == 0) return n;
-//   print n;
-//   //n does not reset
-//   var a = rec(n-1);
-//   print n;
-
-//   // var b = rec(n-1);
-//   return a;
-// }
