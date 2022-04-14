@@ -43,10 +43,10 @@ impl Environment{
             //Not found, check enclosing env if it exists
             None => match self.enclosing{
                 Some(ref env) => env.borrow().get(name),
-                None => Err(RuntimeError { 
-                    message: ["Undefined variable '".to_string() , name.lexeme.clone(), "'.".to_string()].concat(), 
-                    line: name.line
-                })
+                None => Err(RuntimeError::new(
+                    ["Undefined variable '".to_string() , name.lexeme.clone(), "'.".to_string()].concat(), 
+                    name.line
+                ))
             }
         }
 
@@ -61,10 +61,10 @@ impl Environment{
         } else{
             match self.enclosing{
                 Some(ref env) => env.borrow_mut().assign(name, &value),
-                None => Err(RuntimeError { 
-                    message: ["Undefined variable '".to_string() , name.lexeme.clone(), "'.".to_string()].concat(), 
-                    line: name.line
-                })
+                None => Err(RuntimeError::new(  
+                    ["Undefined variable '".to_string() , name.lexeme.clone(), "'.".to_string()].concat(), 
+                    name.line
+                ))
             }     
         }
     }

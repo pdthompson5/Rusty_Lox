@@ -7,7 +7,8 @@ pub enum Stmt {
     Block{statements: Vec<Rc<Stmt>>},
     If{condition: Rc<Expr>, then_branch: Rc<Stmt>, else_branch: Option<Rc<Stmt>>},
     While{condition: Rc<Expr>, body: Rc<Stmt>},
-    Function{name: Token, params: Vec<Token>, body: Vec<Rc<Stmt>>}
+    Function{name: Token, params: Vec<Token>, body: Vec<Rc<Stmt>>},
+    Return{keyword: Token, value: Rc<Expr>}
     
 }
 
@@ -19,6 +20,7 @@ pub trait Visitor<T> {
     fn visit_if_stmt(&self, condition: Rc<Expr>, then_branch: Rc<Stmt>, else_branch: &Option<Rc<Stmt>>) -> T;
     fn visit_while_stmt(&self, condition: Rc<Expr>, body: Rc<Stmt>) -> T;
     fn visit_function_stmt(&self, name: Token, params: Vec<Token>, body: Vec<Rc<Stmt>>) -> T;
+    fn visit_return_stmt(&self, keyword: Token, value: Rc<Expr>) -> T;
 }
 
 impl Stmt{
@@ -31,6 +33,7 @@ impl Stmt{
             Self::If {condition, then_branch, else_branch} => visitor.visit_if_stmt(condition.clone(), then_branch.clone(), else_branch),
             Self::While {condition, body} => visitor.visit_while_stmt(condition.clone(), body.clone()),
             Self::Function {name, params, body} => visitor.visit_function_stmt(name.clone(), params.clone(), body.clone()),
+            Self::Return {keyword, value} => visitor.visit_return_stmt(keyword.clone(), value.clone())
         }
     }
 }

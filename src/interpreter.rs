@@ -14,8 +14,31 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct RuntimeError{
     pub message: String,
-    pub line: u32
+    pub line: u32,
+    pub return_value: Option<LoxValue>
 }   
+
+impl RuntimeError{
+    pub fn new(message: String, line: u32) -> Self{
+        RuntimeError { message, line, return_value: None }
+    }
+
+    pub fn new_token(token: &Token, message: String ) -> Self{
+        RuntimeError{
+            message : ["at '", token.lexeme.as_str(), "'", message.as_str()].concat(),
+            line: token.line,
+            return_value: None
+        }
+    }
+    
+    pub fn new_with_return(token: &Token, message: String, return_value: LoxValue) -> Self{
+        RuntimeError{
+            message : ["at '", token.lexeme.as_str(), "'", message.as_str()].concat(),
+            line: token.line,
+            return_value: Some(return_value)
+        }
+    }
+}
 pub struct Interpreter{
     //This environment handling required massive amounts of indrection. 
     //It is required becuase Rust's borrow checker is strict in that you can only have one mutable reference to a value
@@ -40,12 +63,24 @@ impl  Interpreter{
             LoxValue::Number(since_the_epoch.as_millis() as f64)
         }
 
+        // fn print_env(_arguments: Vec<LoxValue>, interpreter: &Interpreter) -> LoxValue{
+        //     println!("{:?}", interpreter.environment);
+        //     LoxValue::Nil
+        // }
+
         globals.borrow_mut().define("clock".to_string(), LoxValue::Native(
             Rc::new(NativeFunction{
                 arity : 0,
                 function: clock
             })
         ));
+
+        // globals.borrow_mut().define("print_env".to_string(), LoxValue::Native(
+        //     Rc::new(NativeFunction{
+        //         arity : 0,
+        //         function: print_env 
+        //     })
+        // ));
         
         Interpreter {  
             globals,
@@ -67,10 +102,19 @@ impl  Interpreter{
     }
 
     pub fn execute_block(&self, statements: &Vec<Rc<Stmt>>, environment : Environment) -> Result<(), RuntimeError>{
+        //When a call goes to execute block it should save the current env
         let previous = self.environment.replace(Rc::new(RefCell::new(environment)));
         
         for statement in statements{
-            self.execute(statement.clone())?;
+            //This match statement ensure that the environments will be swapped back even if there is a RuntimeError
+            //This is essential if there is a return statement in 'statements'
+            match self.execute(statement.clone()){
+                Ok(()) => (),
+                Err(error) => {
+                    self.environment.replace(previous);
+                    return Err(error)
+                }
+            }
         }
 
         self.environment.replace(previous);
@@ -83,22 +127,17 @@ impl  Interpreter{
 
     fn call_function(&self, func: &dyn LoxCallable, arguments: Vec<LoxValue>, paren: &Token) -> Result<LoxValue, RuntimeError>{
         if arguments.len() != func.arity() as usize{
-            Err(error(paren, ["Expected ".to_string() , func.arity().to_string(), " arguments but got ".to_string(), arguments.len().to_string(), ".".to_string()].concat()))
+            Err(RuntimeError::new_token(paren, ["Expected ".to_string() , func.arity().to_string(), " arguments but got ".to_string(), arguments.len().to_string(), ".".to_string()].concat()))
         } else{
             func.call(self, arguments)
         }
     }
 }
 
-fn error(token: &Token, message: String) -> RuntimeError{
-    RuntimeError{
-        message : ["at '", token.lexeme.as_str(), "'", message.as_str()].concat(),
-        line: token.line
-    }
-}
+
 
 fn invalid_operand_number(operator: &Token) -> RuntimeError{
-    error(operator, "Operand must be a number.".to_string())
+    RuntimeError::new_token(operator, "Operand must be a number.".to_string())
 }
 
 
@@ -112,13 +151,13 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
             PLUS => match left_eval {
                 Number(left_val) => match right_eval{
                     Number(right_val) => Ok(Number(left_val + right_val)),
-                    _ => Err(error(operator, "Operand types do not match".to_string()))
+                    _ => Err(RuntimeError::new_token(operator, "Operand types do not match".to_string()))
                 },
                 LoxString(left_val) => match right_eval{
                     LoxString(right_val) => Ok(LoxString([left_val.as_str(), right_val.as_str()].concat().to_string())),
-                    _ => Err(error(operator, "Operand types do not match".to_string()))
+                    _ => Err(RuntimeError::new_token(operator, "Operand types do not match".to_string()))
                 },
-                _ => Err(error(operator, "Invalid operands. Operands must be numbers or Strings".to_string()))
+                _ => Err(RuntimeError::new_token(operator, "Invalid operands. Operands must be numbers or Strings".to_string()))
             },
 
             MINUS => match left_eval {
@@ -178,7 +217,7 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
             //LoxValue implements PartialEq so simple equality comparisons work 
             EQUAL_EQUAL => Ok(Boolean(left_eval == right_eval)),
             BANG_EQUAL => Ok(Boolean(left_eval != right_eval)),
-            _ => Err(error(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
+            _ => Err(RuntimeError::new_token(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
         }
     }
 
@@ -194,7 +233,7 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
         match callee_val{
             Function(func) => self.call_function(func.as_ref(), argument_vals, paren),
             Native(func) => self.call_function(func.as_ref(), argument_vals, paren),
-            _ => Err(error(paren, "Can only call functions and classes.".to_string()))
+            _ => Err(RuntimeError::new_token(paren, "Can only call functions and classes.".to_string()))
         }
     }
 
@@ -231,7 +270,7 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
                 _ => Err(invalid_operand_number(operator))
             }
             BANG => Ok(Boolean(right.is_truthy())),
-            _ => Err(error(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
+            _ => Err(RuntimeError::new_token(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
         }
     }
     //in Lox: pass by value: all of the values that I have so far. I think functions should be passed by reference
@@ -310,4 +349,11 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
         
         Ok(())
     }
+
+    //Return uses error propigation to return its value packaged in a RuntimeError
+    fn visit_return_stmt(&self, keyword: Token, value: Rc<Expr>) -> Result<(), RuntimeError> {
+        let value_eval = self.evaluate(value)?;
+        Err(RuntimeError::new_with_return(&keyword, "Return called outside of function".to_string(), value_eval))
+    }
+
 }

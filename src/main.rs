@@ -43,9 +43,9 @@ fn error(line: u32, message: &String){
 
 fn error_token(token : &Token, message : String){
     if token.kind == TokenType::EOF{
-        report(token.line, &"at end".to_string(), &message);
+        report(token.line, &" at end".to_string(), &message);
     } else{
-        let location = ["at '", token.lexeme.as_str(), "'"].concat();
+        let location = [" at '", token.lexeme.as_str(), "'"].concat();
         report(token.line, &location, &message);
     }
 }
@@ -131,6 +131,12 @@ impl Lox{
             Ok(expr) => expr,
             Err(()) => {self.had_error = true; return Err(())}
         };
+
+        
+        drop(parser);
+        drop(scanner); //No need to keep the scanner or parser in memory
+        
+   
     
 
         // let mut printer = AstPrinter{};

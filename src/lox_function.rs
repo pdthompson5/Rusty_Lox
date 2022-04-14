@@ -19,8 +19,7 @@ impl LoxCallable for LoxFunction{
     }
 
     fn call(&self, interpreter: &Interpreter, arguments: Vec<LoxValue>) -> Result<LoxValue, RuntimeError>{
-        //TODO: Impl
-
+        //Todo: This line is the issue I think. I'm enclosing the global env? No, that should be right
         let mut environment = Environment::new_enclosed(interpreter.globals.clone());
 
         match self.declaration.as_ref(){
@@ -29,11 +28,18 @@ impl LoxCallable for LoxFunction{
                     environment.define(params.get(i).unwrap().lexeme.clone(), 
                         arguments.get(i).unwrap().clone());
                 }
+
         
-                interpreter.execute_block(&body, environment)?;
-                Ok(LoxValue::Nil)
+                match interpreter.execute_block(&body, environment){
+                    //Check for return packaged in a RuntimeError
+                    Err(error) => match error.return_value{
+                        Some(value) => Ok(value),
+                        None => Err(error)
+                    }
+                    _ => Ok(LoxValue::Nil)
+                }
             },
-            _ => Err(RuntimeError { message: "Error in Parsing: Nonfunction statement in LoxFunction".to_string(), line: 0 })
+            _ => Err(RuntimeError::new("Error in Parsing: Nonfunction statement in LoxFunction".to_string(), 0))
         }
     }
 

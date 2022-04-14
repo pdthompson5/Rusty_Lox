@@ -110,6 +110,9 @@ impl<'a> Parser<'a>{
         if self.match_token(vec![PRINT]){
             return self.print_statement()
         }
+        if self.match_token(vec![RETURN]){
+            return self.return_statement()
+        }
         if self.match_token(vec![WHILE]){
             return self.while_statement()
         }
@@ -241,6 +244,20 @@ impl<'a> Parser<'a>{
         } else{
             Ok(Rc::new(Stmt::Expression { expression }))
         }        
+    }
+
+    pub fn return_statement(&mut self) -> Result<Rc<Stmt>, ()>{
+        let keyword = self.previous();
+        let value = {
+            if !self.check(SEMICOLON){
+                self.expression()?
+            } else{
+                Rc::new(Expr::Literal { value: LoxValue::Nil })
+            }
+        };
+
+        self.consume(SEMICOLON, "Expect ';' after return value.".to_string())?;
+        Ok(Rc::new(Stmt::Return { keyword, value }))
     }
 
 
