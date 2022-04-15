@@ -148,6 +148,14 @@ impl  Interpreter{
             func.call(self, arguments)
         }
     }
+
+    fn look_up_variable(&self, name: &Token, expr_pointer_id: usize) -> Result<LoxValue, RuntimeError>{
+        match self.locals.borrow().get(&expr_pointer_id){
+            Some(dist) => self.environment.borrow().borrow().get_at(dist.clone(), name),
+            None => self.globals.borrow().get(name)
+        }
+
+    }
 }
 
 
@@ -289,10 +297,10 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
             _ => Err(RuntimeError::new_token(operator, "Missed Parser Error".to_string())) //Unreachable if parser operated properly 
         }
     }
-    //in Lox: pass by value: all of the values that I have so far. I think functions should be passed by reference
-    //Can I do that by just having a Lox value for functions that contains the reference rather than making it a LoxValue reference?
-    fn visit_variable_expr(&self, name: &Token) -> Result<LoxValue, RuntimeError> {
-        self.environment.borrow().borrow().get(name)
+
+
+    fn visit_variable_expr(&self, name: &Token, expr_pointer_id: usize) -> Result<LoxValue, RuntimeError> {
+        self.look_up_variable(name, expr_pointer_id)
     }
 
     fn visit_assign_expr(&self, name: &Token, value: Rc<Expr>) -> Result<LoxValue, RuntimeError> {

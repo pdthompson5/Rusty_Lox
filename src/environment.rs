@@ -36,7 +36,7 @@ impl Environment{
     }
 
 
-    //For now all variables are passed by value. The only value that should be passed by reference is likely a function
+    //For now all variables are passed by value (clone preforms a copy), functions are passed by refference
     pub fn get(&self, name: &Token) -> Result<LoxValue, RuntimeError>{
         match self.values.get(&name.lexeme){
             Some(val) => Ok(val.clone()),
@@ -51,6 +51,39 @@ impl Environment{
         }
 
     }
+
+
+    fn ancestor(&self, distance: usize) -> Rc<RefCell<Environment>>{
+        if distance == 1{
+            self.enclosing.as_ref().unwrap().clone()
+        } else{
+            self.enclosing.as_ref().unwrap().borrow().ancestor(distance-1).clone()
+        }
+    }
+
+    pub fn get_at(&self, distance: usize, name: &Token)-> Result<LoxValue, RuntimeError>{
+        if distance == 0{
+            match self.values.get(&name.lexeme){
+                Some(val) => Ok(val.clone()),
+                None => Err(RuntimeError::new(
+                    ["Undefined variable '".to_string() , name.lexeme.clone(), "'.".to_string()].concat(), 
+                    name.line
+                ))
+            }
+        }
+        else{
+            match self.ancestor(distance).borrow().values.get(&name.lexeme){
+                Some(val) => Ok(val.clone()),
+                None => Err(RuntimeError::new(
+                    ["Undefined variable '".to_string() , name.lexeme.clone(), "'.".to_string()].concat(), 
+                    name.line
+                ))
+            }
+        }
+    }
+
+
+
     //Currently assign should support pass by reference as long as LoxValue clone does not deep copy 
     //Fix this clone issues, I don't need to clone every time, that is inefficient
     pub fn assign(&mut self, name: &Token, value: &LoxValue) -> Result<(), RuntimeError>{

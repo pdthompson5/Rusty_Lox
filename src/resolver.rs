@@ -44,12 +44,16 @@ impl Resolver{
         self.scopes.borrow_mut().pop().expect("Resolver attempted to end nonexistent scope");
     }
 
-    fn declare(&self, name : String) -> (){
+    fn declare(&self, name : &Token) -> Result<(), RuntimeError>{
         if self.scopes.borrow().is_empty(){
-            return ;
+            return Ok(());
         }
         let last_scope_index = self.last_scope_index();
-        self.scopes.borrow_mut().get_mut(last_scope_index).unwrap().insert(name, false);
+        if self.scopes.borrow().get(last_scope_index).unwrap().contains_key(&name.lexeme){
+            return Err(RuntimeError::new_token(name, "Already a variable with this name in this scope".to_string()))
+        }
+        self.scopes.borrow_mut().get_mut(last_scope_index).unwrap().insert(name.lexeme.clone(), false);
+        Ok(())
     }
 
     fn define(&self, name : String) -> (){
@@ -69,9 +73,8 @@ impl Resolver{
     }
 
     fn resolve_local(&self, expr: Rc<Expr>, name: &Token) -> (){
-        for i in (0..self.last_scope_index()).rev(){
+        for i in (0..self.last_scope_index()+1).rev(){
             if self.scopes.borrow().get(i).unwrap().contains_key(&name.lexeme){
-                
                 self.interpreter.resolve(expr, self.last_scope_index() - i);
                 return;
             }
@@ -81,7 +84,7 @@ impl Resolver{
     fn resolve_function(&self, params: &Vec<Token>, body: &Vec<Rc<Stmt>>) -> Result<(), RuntimeError>{
         self.begin_scope();
         for param in params{
-            self.declare(param.lexeme.clone());
+            self.declare(param)?;
             self.define(param.lexeme.clone());
         }
 
@@ -211,11 +214,10 @@ impl stmt::VisitorStmt<Result<(), RuntimeError>> for Resolver{
 
     fn visit_var_stmt(&self, statement: Rc<Stmt>) -> Result<(), RuntimeError> {
         let (name, initializer) = match statement.as_ref() {
-            Stmt::Var { name, initializer } => (name, initializer),
-            //TODO: Determine if this acutally matches 
+            Stmt::Var { name, initializer } => (name, initializer), 
             _ => panic!()
         };
-        self.declare(name.lexeme.clone());
+        self.declare(name)?;
         self.resolve_expr(initializer.clone())?;
         self.define(name.lexeme.clone());
         Ok(())
@@ -266,7 +268,7 @@ impl stmt::VisitorStmt<Result<(), RuntimeError>> for Resolver{
             _ => panic!()
         };
 
-        self.declare(name.lexeme.clone());
+        self.declare(name)?;
         self.define(name.lexeme.clone());
 
         self.resolve_function(params, body)?;
