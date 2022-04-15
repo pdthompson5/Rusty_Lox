@@ -30,14 +30,16 @@ fn main(){
     let mut lox = Lox{
         had_error: false,
         had_runtime_error: false,
-        interpreter: Rc::new(Interpreter::new())
+        interpreter: Rc::new(Interpreter::new()),
+        output_buffer: &mut io::stdout(),
     };
     lox.main();
 }
-pub struct Lox{
+pub struct Lox<'a>{
     had_error: bool,
     had_runtime_error: bool,
-    interpreter: Rc<Interpreter>
+    interpreter: Rc<Interpreter>,
+    output_buffer: &'a mut dyn Write,
 }
 
 fn error(line: u32, message: &String){
@@ -58,7 +60,7 @@ fn report(line: u32, location: &String, message: &String){
 }
 
 
-impl Lox{
+impl<'a> Lox<'a>{
     fn main(&mut self) {
         let args: Vec<String> = env::args().collect();
         if args.len() > 2 {
@@ -89,7 +91,7 @@ impl Lox{
     
     fn run_prompt(&mut self){
         loop {
-            print!(">>> ");
+            writeln!(self.output_buffer, ">>> ").expect("Could not write to provided output buffer");
             io::stdout().flush().unwrap();
     
             let stdin = io::stdin();
@@ -135,15 +137,12 @@ impl Lox{
             Err(()) => {self.had_error = true; return Err(())}
         };
 
-        
+        //No need to keep the scanner or parser in memory
         drop(parser);
-        drop(scanner); //No need to keep the scanner or parser in memory
+        drop(scanner); 
         
    
     
-
-        // let mut printer = AstPrinter{};
-        // println!("{}", printer.print(expression));
 
         let resolver = Resolver::new(self.interpreter.clone());
         match resolver.resolve_vec(&statements){
@@ -154,9 +153,11 @@ impl Lox{
                 self.error_exit()
             }
         }
+
+        drop(resolver);
         
         
-        match self.interpreter.interpret(statements){
+        match self.interpreter.interpret(statements, self.output_buffer){
             Ok(()) => Ok(()),
             Err(error) => {
                 self.had_runtime_error = true; 

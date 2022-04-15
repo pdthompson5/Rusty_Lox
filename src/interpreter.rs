@@ -12,6 +12,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::io;
+use std::fmt::Write;
 
 pub struct RuntimeError{
     pub message: String,
@@ -45,7 +47,8 @@ pub struct Interpreter{
     //It is required becuase Rust's borrow checker is strict in that you can only have one mutable reference to a value
     pub globals: Rc<RefCell<Environment>>,
     environment: RefCell<Rc<RefCell<Environment>>>,
-    locals: RefCell<HashMap<usize, usize>>
+    locals: RefCell<HashMap<usize, usize>>,
+    output: RefCell<String>,
 }
 
 impl  Interpreter{
@@ -87,16 +90,17 @@ impl  Interpreter{
         Interpreter {  
             globals,
             environment,
-            locals: RefCell::new(HashMap::new())
+            locals: RefCell::new(HashMap::new()),
+            output: RefCell::new("".to_string())
         }
     }
-    pub fn interpret(&self, statements : Vec<Rc<Stmt>>) -> Result<(), RuntimeError>{    
-        println!("{:?}", self.locals);
+    pub fn interpret(&self, statements : Vec<Rc<Stmt>>, output_stream: &mut dyn io::Write) -> Result<(), RuntimeError>{    
         for statement in statements{
             match self.execute(statement){
                 Ok(()) => (),
                 Err(error) => return Err(error),
             }
+            output_stream.write(self.output.borrow().as_bytes()).expect("Could not write to povided output buffer.");
         }
         Ok(())
     }
@@ -326,7 +330,7 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
     fn visit_print_stmt(&self, expression: Rc<Expr>) -> Result<(), RuntimeError>{
         match self.evaluate(expression){
             Ok(val) => {
-                println!("{}", val);
+                writeln!(self.output.borrow_mut(), "{}", val).expect("Interpreter Buffer Write Error");
                 Ok(())
             },
             Err(error) => Err(error),
