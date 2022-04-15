@@ -2,6 +2,7 @@ use crate::token::Token;
 use crate::lox_type::LoxValue;
 use std::rc::Rc;
 //Exprs need to be boxed to avoid reccursive enums which Rust does not allow
+#[derive(PartialEq)]
 pub enum Expr {
     Binary{left: Rc<Expr>, operator: Token, right: Rc<Expr>}, 
     Grouping{expression: Rc<Expr>},
@@ -55,14 +56,14 @@ impl Expr{
 
     pub fn accept_expr<T>(&self, visitor: &impl VisitorExpr<T>, expr: Rc<Expr>) -> T{
         match self{
-            Self::Binary { left, operator, right} => visitor.visit_binary_expr(expr),
-            Self::Grouping { expression } => visitor.visit_grouping_expr(expr),
-            Self::Literal { value } => visitor.visit_literal_expr(expr),
-            Self::Unary { operator, right} => visitor.visit_unary_expr(expr),
-            Self::Variable {name} => visitor.visit_variable_expr(expr),
-            Self::Assign {name, value} => visitor.visit_assign_expr(expr),
-            Self::Logical { left, operator, right} => visitor.visit_logical_expr(expr),
-            Self::Call { callee, paren, arguments} => visitor.visit_call_expr(expr),
+            Self::Binary { left:_, operator:_, right:_} => visitor.visit_binary_expr(expr),
+            Self::Grouping { expression:_ } => visitor.visit_grouping_expr(expr),
+            Self::Literal { value:_ } => visitor.visit_literal_expr(expr),
+            Self::Unary { operator:_, right:_} => visitor.visit_unary_expr(expr),
+            Self::Variable {name:_} => visitor.visit_variable_expr(expr),
+            Self::Assign {name:_, value:_} => visitor.visit_assign_expr(expr),
+            Self::Logical { left:_, operator:_, right:_} => visitor.visit_logical_expr(expr),
+            Self::Call { callee:_, paren:_, arguments:_} => visitor.visit_call_expr(expr),
         }
     }
 

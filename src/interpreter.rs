@@ -9,13 +9,14 @@ use crate::stmt::{self, Stmt};
 use crate::lox_type::LoxValue::{self, *};
 use crate::token::{Token, TokenType::*};
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct RuntimeError{
     pub message: String,
     pub line: u32,
-    pub return_value: Option<LoxValue>
+    pub return_value: Option<LoxValue>,
 }   
 
 impl RuntimeError{
@@ -43,7 +44,8 @@ pub struct Interpreter{
     //This environment handling required massive amounts of indrection. 
     //It is required becuase Rust's borrow checker is strict in that you can only have one mutable reference to a value
     pub globals: Rc<RefCell<Environment>>,
-    environment: RefCell<Rc<RefCell<Environment>>>
+    environment: RefCell<Rc<RefCell<Environment>>>,
+    locals: RefCell<HashMap<usize, usize>>
 }
 
 impl  Interpreter{
@@ -84,10 +86,12 @@ impl  Interpreter{
         
         Interpreter {  
             globals,
-            environment
+            environment,
+            locals: RefCell::new(HashMap::new())
         }
     }
-    pub fn interpret(&mut self, statements : Vec<Rc<Stmt>>) -> Result<(), RuntimeError>{    
+    pub fn interpret(&self, statements : Vec<Rc<Stmt>>) -> Result<(), RuntimeError>{    
+        println!("{:?}", self.locals);
         for statement in statements{
             match self.execute(statement){
                 Ok(()) => (),
@@ -99,6 +103,18 @@ impl  Interpreter{
 
     fn execute(&self, stmt : Rc<Stmt>) -> Result<(), RuntimeError>{
         stmt.accept(self)
+    }
+
+    
+    pub fn resolve(&self, expr: Rc<Expr>, depth: usize) -> (){
+        //Stores the memory location of the expression as a raw usize value. 
+        //I needed a way to get a unique identifier for each expression. 
+        //I could have just added an ID in the parser but that would require storing a significant amount of data
+        //It turns out that we already have a unique id: The memory address of the expression
+        //Pattern inspired by: https://github.com/UncleScientist/lox-ast/blob/4f56ce6979a3e5eb21b26aaa9b0dbef4860b1474/generate_ast/mod.rs#L106
+        //TODO: Determine if this works and such
+        let pointer_val = Rc::as_ptr(&expr) as usize;
+        self.locals.borrow_mut().insert(pointer_val, depth);
     }
 
     pub fn execute_block(&self, statements: &Vec<Rc<Stmt>>, environment : Environment) -> Result<(), RuntimeError>{

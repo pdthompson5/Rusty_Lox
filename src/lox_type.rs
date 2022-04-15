@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use crate::native_function::NativeFunction;
 use crate::lox_function::LoxFunction;
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq,  Debug)]
 pub enum LoxValue{
     Boolean(bool),
     Number(f64),
@@ -45,8 +45,6 @@ impl LoxValue{
     }
 
 }
-
-
 
 
 

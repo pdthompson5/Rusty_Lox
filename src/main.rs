@@ -1,9 +1,11 @@
 use std::env;
 use std::fs;
 use std::io::{self, BufRead, Write};
+use std::rc::Rc;
 use crate::token::{Token, TokenType};
 use crate::parser::Parser;
 use crate::interpreter::Interpreter;
+use crate::resolver::Resolver;
 mod scanner;
 mod token;
 mod lox_type;
@@ -21,21 +23,21 @@ mod resolver;
 
 
 use crate::scanner::Scanner;
-//TODO: Current status: Everything is looking good, I think I'm ready to keep going 
+
 
 
 fn main(){
     let mut lox = Lox{
         had_error: false,
         had_runtime_error: false,
-        interpreter: Interpreter::new()
+        interpreter: Rc::new(Interpreter::new())
     };
     lox.main();
 }
 pub struct Lox{
     had_error: bool,
     had_runtime_error: bool,
-    interpreter: Interpreter
+    interpreter: Rc<Interpreter>
 }
 
 fn error(line: u32, message: &String){
@@ -142,6 +144,16 @@ impl Lox{
 
         // let mut printer = AstPrinter{};
         // println!("{}", printer.print(expression));
+
+        let resolver = Resolver::new(self.interpreter.clone());
+        match resolver.resolve_vec(&statements){
+            Ok(()) => (),
+            Err(error) => {
+                self.had_error = true; 
+                crate::error(error.line, &error.message);
+                self.error_exit()
+            }
+        }
         
         
         match self.interpreter.interpret(statements){

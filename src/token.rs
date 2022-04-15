@@ -2,8 +2,7 @@
 
 use crate::lox_type::LoxValue;
 
-
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
 pub enum TokenType {
     // Single-character tokens.
     LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
@@ -26,7 +25,7 @@ pub enum TokenType {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct Token  {
     pub kind: TokenType,
     pub lexeme: String,
