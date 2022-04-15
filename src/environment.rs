@@ -84,8 +84,6 @@ impl Environment{
 
 
 
-    //Currently assign should support pass by reference as long as LoxValue clone does not deep copy 
-    //Fix this clone issues, I don't need to clone every time, that is inefficient
     pub fn assign(&mut self, name: &Token, value: &LoxValue) -> Result<(), RuntimeError>{
         let value = value.clone();
         if self.values.contains_key(&name.lexeme){
@@ -99,6 +97,19 @@ impl Environment{
                     name.line
                 ))
             }     
+        }
+    }
+
+
+    pub fn assign_at(&mut self, distance: usize, name: &Token, value: &LoxValue) -> Result<(), RuntimeError>{
+        let value = value.clone();
+        if distance == 0{
+            self.values.insert(name.lexeme.clone(), value);
+            Ok(())
+        }
+        else{
+            self.ancestor(distance).borrow_mut().values.insert(name.lexeme.clone(), value);
+            Ok(())
         }
     }
 }

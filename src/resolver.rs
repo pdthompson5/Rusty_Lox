@@ -73,7 +73,7 @@ impl Resolver{
     }
 
     fn resolve_local(&self, expr: Rc<Expr>, name: &Token) -> (){
-        for i in (0..self.last_scope_index()+1).rev(){
+        for i in (0..self.scopes.borrow().len()).rev(){
             if self.scopes.borrow().get(i).unwrap().contains_key(&name.lexeme){
                 self.interpreter.resolve(expr, self.last_scope_index() - i);
                 return;

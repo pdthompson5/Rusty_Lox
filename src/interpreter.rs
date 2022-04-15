@@ -303,9 +303,12 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
         self.look_up_variable(name, expr_pointer_id)
     }
 
-    fn visit_assign_expr(&self, name: &Token, value: Rc<Expr>) -> Result<LoxValue, RuntimeError> {
+    fn visit_assign_expr(&self, name: &Token, value: Rc<Expr>, expr_pointer_id: usize) -> Result<LoxValue, RuntimeError> {
         let value = self.evaluate(value)?;
-        self.environment.borrow().borrow_mut().assign(name, &value)?;
+        match self.locals.borrow().get(&expr_pointer_id){
+            Some(dist) => self.environment.borrow().borrow_mut().assign_at(*dist, name, &value)?,
+            None => self.globals.borrow_mut().assign(name, &value)?
+        }
         Ok(value)
     }
 
