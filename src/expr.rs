@@ -25,6 +25,20 @@ pub trait Visitor<T> {
 
 }
 
+pub trait VisitorExpr<T> {
+    fn visit_binary_expr(&self, expr: Rc<Expr>) -> T;
+    fn visit_grouping_expr(&self, expr: Rc<Expr>) -> T;
+    fn visit_literal_expr(&self, expr: Rc<Expr>) -> T;
+    fn visit_unary_expr(&self, expr: Rc<Expr>) -> T;
+    fn visit_variable_expr(&self, expr: Rc<Expr>) -> T;
+    fn visit_assign_expr(&self, expr: Rc<Expr>) -> T;
+    fn visit_logical_expr(&self, expr: Rc<Expr>) -> T;
+    fn visit_call_expr(&self, expr: Rc<Expr>) -> T;
+
+}
+
+
+
 impl Expr{
     pub fn accept<T>(&self, visitor: &impl Visitor<T>) -> T{
         match self{
@@ -38,4 +52,19 @@ impl Expr{
             Self::Call { callee, paren, arguments} => visitor.visit_call_expr(callee.clone(), paren, arguments),
         }
     }
+
+    pub fn accept_expr<T>(&self, visitor: &impl VisitorExpr<T>, expr: Rc<Expr>) -> T{
+        match self{
+            Self::Binary { left, operator, right} => visitor.visit_binary_expr(expr),
+            Self::Grouping { expression } => visitor.visit_grouping_expr(expr),
+            Self::Literal { value } => visitor.visit_literal_expr(expr),
+            Self::Unary { operator, right} => visitor.visit_unary_expr(expr),
+            Self::Variable {name} => visitor.visit_variable_expr(expr),
+            Self::Assign {name, value} => visitor.visit_assign_expr(expr),
+            Self::Logical { left, operator, right} => visitor.visit_logical_expr(expr),
+            Self::Call { callee, paren, arguments} => visitor.visit_call_expr(expr),
+        }
+    }
+
+    
 }

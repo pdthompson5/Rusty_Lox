@@ -23,6 +23,17 @@ pub trait Visitor<T> {
     fn visit_return_stmt(&self, keyword: Token, value: Rc<Expr>) -> T;
 }
 
+pub trait Visitor2<T> {
+    fn visit_expression_stmt(&self, statement: Rc<Stmt>) -> T;
+    fn visit_print_stmt(&self, statement: Rc<Stmt>) -> T;
+    fn visit_var_stmt(&self, statement: Rc<Stmt>) -> T;
+    fn visit_block_stmt(&self, statement: Rc<Stmt>) -> T;
+    fn visit_if_stmt(&self, statement: Rc<Stmt>) -> T;
+    fn visit_while_stmt(&self, statement: Rc<Stmt>) -> T;
+    fn visit_function_stmt(&self,statement: Rc<Stmt>) -> T;
+    fn visit_return_stmt(&self, statement: Rc<Stmt>) -> T;
+}
+
 impl Stmt{
     pub fn accept<T>(&self, visitor: &impl Visitor<T>) -> T{
         match self{ 
@@ -34,6 +45,20 @@ impl Stmt{
             Self::While {condition, body} => visitor.visit_while_stmt(condition.clone(), body.clone()),
             Self::Function {name, params, body} => visitor.visit_function_stmt(name.clone(), params.clone(), body.clone()),
             Self::Return {keyword, value} => visitor.visit_return_stmt(keyword.clone(), value.clone())
+        }
+    }
+
+
+    pub fn accept_2<T>(&self, visitor: &impl Visitor2<T>) -> T{
+        match self{ 
+            Self::Expression {expression } => visitor.visit_expression_stmt(Rc::new(*self)),
+            Self::Print {expression } =>visitor.visit_expression_stmt(Rc::new(*self)),
+            Self::Var {name, initializer } => visitor.visit_expression_stmt(Rc::new(*self)),
+            Self::Block {statements} => visitor.visit_expression_stmt(Rc::new(*self)), 
+            Self::If {condition, then_branch, else_branch} => visitor.visit_expression_stmt(Rc::new(*self)),
+            Self::While {condition, body} => visitor.visit_expression_stmt(Rc::new(*self)),
+            Self::Function {name, params, body} => visitor.visit_expression_stmt(Rc::new(*self)),
+            Self::Return {keyword, value} => visitor.visit_expression_stmt(Rc::new(*self))
         }
     }
 }

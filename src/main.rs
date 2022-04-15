@@ -16,6 +16,7 @@ mod environment;
 mod lox_callable;
 mod lox_function;
 mod native_function;
+mod resolver;
 
 
 
