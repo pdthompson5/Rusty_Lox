@@ -79,10 +79,10 @@ fn test_closures(){
 fn test_prime_factorization(){
     run_and_assert("prime_factorization");
 }
-// #[test]
-// fn test_(){
-//     run_and_assert("");
-// }
+#[test]
+fn test_stack(){
+    run_and_assert("stack");
+}
 
 
 

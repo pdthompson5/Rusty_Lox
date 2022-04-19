@@ -1,19 +1,22 @@
 //adapted from: https://people.revoledu.com/kardi/tutorial/BasicMath/Prime/Algorithm-PrimeFactor.html#:~:text=Algorithm%20for%20Prime%20Factorization&text=The%20simplest%20algorithm%20to%20find,until%20the%20number%20becomes%201.&text=Thus%20100%20divided%20by%202,Now%20our%20number%20becomes%2050.&text=Thus%2050%20divided%20by%202%20become%2025.
 fun prime_factorize(num){
-  var prime_factor = 2;
-  print "Prime factors of";
-  print num;
-  print "---------------------";
-
-  while(num >= (prime_factor * prime_factor)){
-    if(num % prime_factor == 0){
-      print prime_factor;
-      num = num / prime_factor;
-    }else{
-      prime_factor = prime_factor + 1;
+    var prime_factor = 2;
+    print "Prime factors of";
+    print num;
+    print "---------------------";
+    fun get_factors(){
+        while(num >= (prime_factor * prime_factor)){
+            if(num % prime_factor == 0){
+                print prime_factor;
+                num = num / prime_factor;
+            }else{
+                prime_factor = prime_factor + 1;
+            }
+        }
     }
-  }
-  print num;
+
+    get_factors();
+    print num;
 }
 
 prime_factorize(100);

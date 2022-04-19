@@ -1,8 +1,11 @@
+//This is an attempt at creating a persistent stack. 
+//Limitations include the max size of 4 and the need to declare variables in the same scope as where the stack is being invoked.
 var a0;
 var a1;
 var a2;
 var a3;
 var index = 0;
+
 fun stack(instruction){
   fun pop(){
     var to_return;
