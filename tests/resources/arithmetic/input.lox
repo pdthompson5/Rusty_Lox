@@ -1,0 +1,10 @@
+//Arithmetic 
+print 1 + 5; //6
+print 3 - 2; //1
+print 4 * 4; //16
+print 8 / 2; //4
+
+print 15 + 20 * 3 / 6 - 2; //23
+
+//unary
+print -15; //-15

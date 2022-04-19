@@ -1,12 +1,84 @@
 
-
+use rusty_lox::Lox;
+use rusty_lox::interpreter::Interpreter;
+use std::io::{BufWriter};
+use std::rc::Rc;
 use std::fs;
-fn read_file(filename: &str) -> String{
-    fs::read_to_string(filename).expect("Failed to find test file")
+
+fn run_test_file(test_name: &str) -> String{
+    let mut buf = BufWriter::new(Vec::new());
+    let mut lox = Lox{
+        had_error: false,
+        had_runtime_error: false,
+        interpreter: Rc::new(Interpreter::new()),
+        output_buffer: &mut buf,
+    };
+
+    let absolute_filename = ["tests/resources/", test_name, "/input.lox"].concat();
+    lox.run_file(&absolute_filename);
+
+    let bytes = buf.into_inner().expect("Error reading from test buffer");
+    String::from_utf8(bytes).expect("Error reading from test buffer")
 }
 
-#[cfg(test)]
-fn test_test(){
-    print!("{}", read_file("tests/resources/all_tests.lox"));
-    assert!(false)
+fn read_expected_output(test_name: &str) -> String{
+    fs::read_to_string(["tests/resources/", test_name, "/expected_output.lox"].concat().as_str()).expect("Error reading from expected output file")
 }
+
+fn run_and_assert(test_name: &str){
+    assert_eq!(run_test_file(test_name), read_expected_output(test_name))
+}
+
+
+
+#[test]
+fn test_shadowing(){
+    run_and_assert("shadowing");
+}
+
+#[test]
+fn test_literals(){
+    run_and_assert("literals");
+}
+#[test]
+fn test_comparisons(){
+    run_and_assert("comparisons");
+}
+#[test]
+fn test_arithmetic(){
+    run_and_assert("arithmetic");
+}
+#[test]
+fn test_global_variables(){
+    run_and_assert("global_variables");
+}
+#[test]
+fn test_colinked_recursion(){
+    run_and_assert("colinked_recursion");
+}
+#[test]
+fn test_scope(){
+    run_and_assert("scope");
+}
+// #[test]
+// fn test_(){
+//     run_and_assert("");
+// }
+// #[test]
+// fn test_(){
+//     run_and_assert("");
+// }
+// #[test]
+// fn test_(){
+//     run_and_assert("");
+// }
+// #[test]
+// fn test_(){
+//     run_and_assert("");
+// }
+
+
+
+
+
+

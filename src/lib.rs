@@ -1,4 +1,4 @@
-
+//This is essentially the main file 
 use std::env;
 use std::fs;
 use std::io::{self, BufRead, Write};
@@ -11,7 +11,7 @@ mod scanner;
 mod token;
 mod lox_type;
 mod expr;
-mod interpreter;
+pub mod interpreter;
 mod ast_printer;
 mod parser;
 mod stmt;
@@ -36,10 +36,10 @@ pub fn entry_point(){
     lox.main();
 }
 pub struct Lox<'a>{
-    had_error: bool,
-    had_runtime_error: bool,
-    interpreter: Rc<Interpreter>,
-    output_buffer: &'a mut dyn Write,
+    pub had_error: bool,
+    pub had_runtime_error: bool,
+    pub interpreter: Rc<Interpreter>,
+    pub output_buffer: &'a mut dyn Write,
 }
 
 fn error(line: u32, message: &String){
@@ -81,8 +81,8 @@ impl<'a> Lox<'a>{
         }
     }
     
-    fn run_file(&mut self, path: &String){
-        let source: String = fs::read_to_string(path).expect("Cannot find file");
+    pub fn run_file(&mut self, path: &String){
+        let source: String = fs::read_to_string(path).expect(["Cannot find file: ", path].concat().as_str() );
         match self.run(source){
             Ok(()) => return,
             Err(()) => self.error_exit()
@@ -91,7 +91,7 @@ impl<'a> Lox<'a>{
     
     fn run_prompt(&mut self){
         loop {
-            writeln!(self.output_buffer, ">>> ").expect("Could not write to provided output buffer");
+            write!(self.output_buffer, ">>> ").expect("Could not write to provided output buffer");
             io::stdout().flush().unwrap();
     
             let stdin = io::stdin();

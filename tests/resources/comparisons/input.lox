@@ -1,0 +1,17 @@
+//comparison and equality
+print 15 < 20; //true 
+print 20 < 15; //false
+
+print 15 > 20; //false
+print 20 > 15; //true
+
+print 15 <= 15; //true
+
+print 15 >= 15; //true 
+
+print 1 == 2; //false
+print "cat" != "dog"; //true
+
+print 314 == "pi"; //false
+
+print 123 == "123";//false

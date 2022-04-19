@@ -100,7 +100,8 @@ impl  Interpreter{
                 Ok(()) => (),
                 Err(error) => return Err(error),
             }
-            output_stream.write(self.output.borrow().as_bytes()).expect("Could not write to povided output buffer.");
+            output_stream.write(self.output.borrow().as_bytes()).expect("Could not write to provided output buffer.");
+            self.output.borrow_mut().clear();
         }
         Ok(())
     }

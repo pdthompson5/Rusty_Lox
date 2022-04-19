@@ -1,0 +1,20 @@
+//Test default assignment
+var a;
+print a; //nil
+
+var foo = "foo";
+var bar = "bar";
+print foo; //foo
+print bar; //bar
+
+//Access global variables inside function
+fun foobar(){
+    print foo; //foo
+    print bar; //bar
+}
+
+foobar();
+
+//reassign variable
+foo = 25;
+print foo;
