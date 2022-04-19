@@ -7,3 +7,20 @@
   var a = "second";
   print a; // second
 }
+
+
+//Non-shadowed access
+var global = "outside";
+{
+  var local = "inside";
+  print global + local; //outsideinside
+}
+
+
+//shadowing 
+var a = 0;
+{
+  var a = 20;
+  print a; //20
+}
+print a; //0

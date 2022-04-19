@@ -1,0 +1,20 @@
+
+
+//dangling else
+if (true) if (false) print "inner"; else  print "else"; // else
+if (true) if (true) print "inner"; else print "else"; // inner
+if (false) if (true) print "inner"; else print "else"; // prints nothing
+
+
+//short-circuit 
+fun true_and_15(){
+    print "15";
+    return true;
+}
+
+true or true_and_15(); //Prints nothing
+false and true_and_15(); //Prints nothing
+
+//"or" returns value
+print "hi" or 2; // hi
+print nil or "yes"; // yes

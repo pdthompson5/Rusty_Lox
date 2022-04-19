@@ -4,8 +4,6 @@ use crate::{lox_type::LoxValue, interpreter::RuntimeError, token::Token};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-//TODO: I think the issue is that the enclosing is itself
-
 #[derive(Debug, Clone)]
 pub struct Environment{
     values : HashMap<String, LoxValue>,

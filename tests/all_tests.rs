@@ -32,11 +32,6 @@ fn run_and_assert(test_name: &str){
 
 
 #[test]
-fn test_shadowing(){
-    run_and_assert("shadowing");
-}
-
-#[test]
 fn test_literals(){
     run_and_assert("literals");
 }
@@ -60,18 +55,18 @@ fn test_colinked_recursion(){
 fn test_scope(){
     run_and_assert("scope");
 }
-// #[test]
-// fn test_(){
-//     run_and_assert("");
-// }
-// #[test]
-// fn test_(){
-//     run_and_assert("");
-// }
-// #[test]
-// fn test_(){
-//     run_and_assert("");
-// }
+#[test]
+fn test_if_control_flow(){
+    run_and_assert("if_control_flow");
+}
+#[test]
+fn test_loops(){
+    run_and_assert("loops");
+}
+#[test]
+fn test_fibonocci(){
+    run_and_assert("fibonocci");
+}
 // #[test]
 // fn test_(){
 //     run_and_assert("");

@@ -36,10 +36,6 @@ pub struct Token  {
 
 
 impl Token{
-    // pub fn to_string(&self) -> String {
-    //     return format!("{:?} {} {}", self.kind, self.lexeme, self.literal);
-    // }
-
     pub fn new(kind : TokenType, lexeme : String, literal : LoxValue, line : u32) -> Self{
         Token{
             kind,
