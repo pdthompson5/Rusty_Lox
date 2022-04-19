@@ -80,6 +80,7 @@ impl Scanner{
             '+' =>  self.add_token_null(PLUS),
             ';' =>  self.add_token_null(SEMICOLON),
             '*' =>  self.add_token_null(STAR),
+            '%' =>  self.add_token_null(PERCENTAGE),
             '!' =>  {if self.match_char('=') {
                         self.add_token_null(BANG_EQUAL)
                     } else{ 

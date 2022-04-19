@@ -235,9 +235,20 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter{
                 },
                 _ => Err(invalid_operand_number(operator))
             },
-            LESS_EQUAL =>match left_eval{
+            LESS_EQUAL => match left_eval{
                 Number(left_val) => match right_eval{
                     Number(right_val) => Ok(Boolean(left_val < right_val || left_val == right_val)),
+                    _ => Err(invalid_operand_number(operator))
+                },
+                _ => Err(invalid_operand_number(operator))
+            },
+            PERCENTAGE => match left_eval{
+                Number(left_val) => match right_eval{
+                    Number(right_val) => {
+                        Ok(Number(left_val % right_val))
+                    },
+                    
+                    
                     _ => Err(invalid_operand_number(operator))
                 },
                 _ => Err(invalid_operand_number(operator))

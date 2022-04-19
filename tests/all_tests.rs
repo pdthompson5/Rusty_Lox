@@ -75,10 +75,10 @@ fn test_functions(){
 fn test_closures(){
     run_and_assert("closures");
 }
-// #[test]
-// fn test_(){
-//     run_and_assert("");
-// }
+#[test]
+fn test_prime_factorization(){
+    run_and_assert("prime_factorization");
+}
 // #[test]
 // fn test_(){
 //     run_and_assert("");

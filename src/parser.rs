@@ -379,7 +379,7 @@ impl<'a> Parser<'a>{
     fn factor(&mut self) -> Result<Rc<Expr>, ()>{
         let mut expr = self.unary()?;
 
-        while self.match_token(vec![SLASH, STAR]) {
+        while self.match_token(vec![SLASH, STAR, PERCENTAGE]) {
             let operator = self.previous();
             let right = self.unary()?;
             expr = Rc::new(Expr::Binary { left:expr, operator, right});

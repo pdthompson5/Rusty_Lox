@@ -7,3 +7,6 @@ There were a couple of times in this process where I was entirely stummped on ho
         was absolutley not viable as there are strict trait requirements for Hashmaps: (Eq and Hash. Both are difficult to implement)
         As it turns out I had a unique ID the whole time: The memory location of the expression. 
         This was inspired the source but not copied 
+
+
+language extenstions: Added remainder operator for prime factorization
