@@ -372,12 +372,11 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter{
     }
 
     fn visit_function_stmt(&self, name: Token, params: Vec<Token>, body: Vec<Rc<Stmt>>) -> Result<(), RuntimeError> {
-        //Deep-ish copy the current env (deep copy values but not the enclosing env)
-        let closure = self.environment.borrow().borrow().clone();
+        let closure = self.environment.borrow().clone();
         let func = LoxFunction{
             arity: params.len() as u32,
             declaration: Rc::new(Stmt::Function { name: name.clone(), params, body }),
-            closure : Rc::new(RefCell::new(closure))
+            closure : closure
         };
 
         self.environment.borrow().borrow_mut().define(name.lexeme, Function(Rc::new(func)));

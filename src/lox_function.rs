@@ -21,7 +21,6 @@ impl LoxCallable for LoxFunction{
     }
 
     fn call(&self, interpreter: &Interpreter, arguments: Vec<LoxValue>) -> Result<LoxValue, RuntimeError>{
-        //In order to implement closures we need to deep copy an environment 
         let mut environment = Environment::new_enclosed(self.closure.clone());
 
         match self.declaration.as_ref(){
