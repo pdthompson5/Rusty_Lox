@@ -14,6 +14,8 @@ pub struct Environment{
 //I tried extensivley but the way that the environment is both swapped and contains a muttable reference to the
 //enclosing environment goes deeply agaist the grain of Rust 
 
+//TODO: No longer deep copy env becuase that is not needed with resolving 
+
 impl Environment{
     pub fn new() -> Self{
         Environment { 

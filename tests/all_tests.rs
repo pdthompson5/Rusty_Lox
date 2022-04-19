@@ -67,11 +67,22 @@ fn test_loops(){
 fn test_fibonocci(){
     run_and_assert("fibonocci");
 }
+#[test]
+fn test_functions(){
+    run_and_assert("functions");
+}
+#[test]
+fn test_closures(){
+    run_and_assert("closures");
+}
 // #[test]
 // fn test_(){
 //     run_and_assert("");
 // }
-
+// #[test]
+// fn test_(){
+//     run_and_assert("");
+// }
 
 
 

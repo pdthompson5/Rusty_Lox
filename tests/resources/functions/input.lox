@@ -1,0 +1,39 @@
+fun foo(){
+    return 15 + 20;
+}
+
+fun bar(){
+    return foo;
+}
+
+print bar()(); //35
+print bar() == foo; // true
+
+
+//return from anywhere
+fun nest(){
+    if(true){
+        while(true){
+            return 15;
+            print "This should not be printed";
+        }
+    }
+}
+
+print nest(); //15
+
+
+//Environment test from textbook 
+fun count(n) {
+  if (n > 1) count(n - 1);
+  print n;
+}
+
+count(3);
+
+//test default return value 
+fun no_return(){
+
+}
+print no_return(); //nil
+

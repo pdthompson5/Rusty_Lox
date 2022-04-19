@@ -15,3 +15,11 @@ print "cat" != "dog"; //true
 print 314 == "pi"; //false
 
 print 123 == "123";//false
+
+fun average (a, b){
+    return (a + b) / 2;
+}
+
+var foo = average;
+var bar = foo;
+print foo == bar; //true
