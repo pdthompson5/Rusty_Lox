@@ -465,8 +465,6 @@ impl<'a> Parser<'a>{
         
         //No expression matched
         crate::error_token(&self.peek(), "Expect Expression".to_string()); // report error
-        //An expression must be returned so just return Nil. The value of the expression should never be used.
-        //TODO: Determine if this is true
         Err(())
     }
 

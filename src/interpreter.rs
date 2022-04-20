@@ -117,7 +117,6 @@ impl  Interpreter{
         //I could have just added an ID in the parser but that would require storing a significant amount of data
         //It turns out that we already have a unique id: The memory address of the expression
         //Pattern inspired by: https://github.com/UncleScientist/lox-ast/blob/4f56ce6979a3e5eb21b26aaa9b0dbef4860b1474/generate_ast/mod.rs#L106
-        //TODO: Determine if this works and such
         let pointer_val = Rc::as_ptr(&expr) as usize;
         self.locals.borrow_mut().insert(pointer_val, depth);
     }

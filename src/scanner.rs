@@ -235,7 +235,7 @@ impl Scanner{
         let mut type_to_add = IDENTIFIER;
 
         match self.keywords.get(&self.source[self.start .. self.current].to_string()){
-            Some(v) => type_to_add = *v, //TODO: Figure out if this works 
+            Some(v) => type_to_add = *v, 
             None => ()
         }
         

@@ -12,7 +12,6 @@ mod token;
 mod lox_type;
 mod expr;
 pub mod interpreter;
-mod ast_printer;
 mod parser;
 mod stmt;
 mod environment;
