@@ -1,0 +1,32 @@
+pdthompson5@HPPavPH:~/cs403/rusty_lox$ cargo run
+    Finished dev [unoptimized + debuginfo] target(s) in 0.01s
+     Running `target/debug/rusty_lox`
+>>> print "Hello Lox";
+Hello Lox
+>>> print true;
+true
+>>> var a = 20;
+>>> for (var i = 10; i > 0; i = i-1) print i;
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+>>> fun divide_by_6(b) {return b/6;}
+>>> print divide_by_6(12);
+2
+>>> if ("true" == "true") print "true";
+true
+>>> print 15 + 20 * 3 / 6 - 2;
+23
+>>> fun foo(){return 20;}
+>>> fun bar(){return foo;}
+>>> a = bar();
+>>> print a();
+20
+>>> ^C

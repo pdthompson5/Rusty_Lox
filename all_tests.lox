@@ -38,3 +38,22 @@ false;
 123 == "123";//false
 
 
+
+
+
+print "Hello Lox";
+print true;
+var a = 20;
+
+for (var i = 10; i > 0; i = i-1) print i;
+
+fun divide_by_6(b) {return b/6;}
+print divide_by_6(12);
+
+if ("true" == "true") print "true";
+print 15 + 20 * 3 / 6 - 2;
+
+fun foo(){return 20;}
+fun bar(){return foo;}
+a = bar();
+print a();

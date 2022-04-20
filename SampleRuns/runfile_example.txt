@@ -1,0 +1,7 @@
+pdthompson5@HPPavPH:~/cs403/rusty_lox$ cargo run -- tests/resources/stack/input.lox 
+    Finished dev [unoptimized + debuginfo] target(s) in 0.01s
+     Running `target/debug/rusty_lox tests/resources/stack/input.lox`
+22
+15
+Hello
+nil
