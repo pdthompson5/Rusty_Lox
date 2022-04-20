@@ -1,77 +1,96 @@
-//This is an attempt at creating a persistent stack. 
-//Limitations include the max size of 4 and the need to declare variables in the same scope as where the stack is being invoked.
-var a0;
-var a1;
-var a2;
-var a3;
-var index = 0;
+//This is an attempt at creating a persistent stack without access to classes. It is an absurd but interesting application of closures. 
+//Limitations include the max size of 4.
 
-fun stack(instruction){
-  fun pop(){
-    var to_return;
-    if(index == 0){
-      to_return = a0;
+fun get_stack(){
+  var a0;
+  var a1;
+  var a2;
+  var a3;
+  var index = 0;
+
+  fun stack(instruction){
+    fun pop(){
+      var to_return;
+      if(index == 0){
+        to_return = a0;
+        a0 = nil;
+      }
+      if(index == 1){
+        to_return = a1;
+        a1 = nil;
+      }
+      if(index == 2){
+        to_return = a2;
+        a2 = nil;
+      }
+      if(index == 3){
+        to_return = a3;
+        a3 = nil;
+      }
+
+      if(to_return != nil){
+        index = index -1;
+      }
+      
+      return to_return;
     }
-    if(index == 1){
-      to_return = a1;
+    fun push(elm){
+      if(index == 3){
+        print "Error: Stack is full";
+      }
+      index = index + 1;
+      if(index == 0){
+        a0 = elm;
+      }
+      if(index == 1){
+        a1 = elm;
+      }
+      if(index == 2){
+        a2 = elm;
+      }
+      if(index == 3){
+        a3 = elm;
+      }
     }
-    if(index == 2){
-      to_return = a2;
+    fun peek(){
+      if(index == 0){
+        return a0;
+      }
+      if(index == 1){
+        return a1;
+      }
+      if(index == 2){
+        return a2;
+      }
+      if(index == 3){
+        return a3;
+      } 
     }
-    if(index == 3){
-      to_return = a3;
-    }
-    index = index -1;
-    return to_return;
-  }
-  fun push(elm){
-    index = index + 1;
-    if(index == 0){
-      a0 = elm;
-    }
-    if(index == 1){
-      a1 = elm;
-    }
-    if(index == 2){
-      a2 = elm;
-    }
-    if(index == 3){
-      a3 = elm;
-    }
-  }
-  fun peek(){
-    if(index == 0){
-      return a0;
-    }
-    if(index == 1){
-      return a1;
-    }
-    if(index == 2){
-      return a2;
-    }
-    if(index == 3){
-      return a3;
-    } 
-  }
 
 
-  if(instruction == "pop"){
-    return pop;
+    if(instruction == "pop"){
+      return pop;
+    }
+    if(instruction == "push"){
+      return push;
+    }
+    if(instruction == "peek"){
+      return peek;
+    }
   }
-  if(instruction == "push"){
-    return push;
-  }
-  if(instruction == "peek"){
-    return peek;
-  }
-
+  return stack;
 }
 
 
-var stack = stack;
+var stack = get_stack();
 stack("push")(15);
 stack("push")(22);
-print stack("pop")();
-print stack("pop")();
-stack("push")("Hello");
-print stack("peek")();
+print stack("pop")(); //22
+print stack("pop")(); //15
+stack("push")("Hello"); 
+print stack("peek")(); //Hello
+stack("push")(20);
+
+//Show that stacks are unique
+var stack2 = get_stack();
+print stack2("pop")(); //nil

@@ -1,7 +1,6 @@
-
 use rusty_lox::Lox;
 use rusty_lox::interpreter::Interpreter;
-use std::io::{BufWriter};
+use std::io::BufWriter;
 use std::rc::Rc;
 use std::fs;
 
@@ -64,8 +63,8 @@ fn test_loops(){
     run_and_assert("loops");
 }
 #[test]
-fn test_fibonocci(){
-    run_and_assert("fibonocci");
+fn test_fibonacci(){
+    run_and_assert("fibonacci");
 }
 #[test]
 fn test_functions(){
@@ -83,8 +82,7 @@ fn test_prime_factorization(){
 fn test_stack(){
     run_and_assert("stack");
 }
-
-
-
-
-
+#[test]
+fn test_pass_by_value(){
+    run_and_assert("pass_by_value");
+}

@@ -1,0 +1,24 @@
+var a = 15;
+var b = a;
+a = a + 20;
+print a; //35
+print b; //15
+
+
+
+fun add_15(a){
+    a = a + 15;
+}
+var c = 20;
+print c; //20
+add_15(c);
+print c; //20
+
+
+fun modify_string(stringA){
+    stringA = stringA + "Mod";
+}
+var stringA = "StringA";
+print stringA;
+modify_string(stringA);
+print stringA;

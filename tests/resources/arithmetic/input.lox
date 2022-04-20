@@ -8,3 +8,5 @@ print 15 + 20 * 3 / 6 - 2; //23
 
 //unary
 print -15; //-15
+
+print "My other car " + "is a cdr."; //My other car is a cdr.
