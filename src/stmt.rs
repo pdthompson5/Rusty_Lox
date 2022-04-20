@@ -30,7 +30,7 @@ pub trait VisitorStmt<T> {
     fn visit_block_stmt(&self, statement: Rc<Stmt>) -> T;
     fn visit_if_stmt(&self, statement: Rc<Stmt>) -> T;
     fn visit_while_stmt(&self, statement: Rc<Stmt>) -> T;
-    fn visit_function_stmt(&self,statement: Rc<Stmt>) -> T;
+    fn visit_function_stmt(&self, statement: Rc<Stmt>) -> T;
     fn visit_return_stmt(&self, statement: Rc<Stmt>) -> T;
 }
 

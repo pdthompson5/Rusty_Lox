@@ -1,5 +1,5 @@
-use crate::token::Token;
 use crate::lox_type::LoxValue;
+use crate::token::Token;
 use std::rc::Rc;
 //Exprs need to be boxed to avoid reccursive enums which Rust does not allow
 #[derive(PartialEq)]
@@ -15,15 +15,14 @@ pub enum Expr {
 }
 
 pub trait Visitor<T> {
-    fn visit_binary_expr(&self, left: Rc<Expr>, operator : &Token, right : Rc<Expr>) -> T;
-    fn visit_grouping_expr(&self, expression : Rc<Expr>) -> T;
-    fn visit_literal_expr(&self, expr : &LoxValue) -> T;
-    fn visit_unary_expr(&self, operator : &Token, right : Rc<Expr>) -> T;
-    fn visit_variable_expr(&self, name : &Token, expr_pointer_id: usize) -> T;
+    fn visit_binary_expr(&self, left: Rc<Expr>, operator: &Token, right: Rc<Expr>) -> T;
+    fn visit_grouping_expr(&self, expression: Rc<Expr>) -> T;
+    fn visit_literal_expr(&self, expr: &LoxValue) -> T;
+    fn visit_unary_expr(&self, operator: &Token, right: Rc<Expr>) -> T;
+    fn visit_variable_expr(&self, name: &Token, expr_pointer_id: usize) -> T;
     fn visit_assign_expr(&self, name: &Token, value: Rc<Expr>, expr_pointer_id: usize) -> T;
-    fn visit_logical_expr(&self, left: Rc<Expr>, operator : &Token, right : Rc<Expr>) -> T;
-    fn visit_call_expr(&self, callee: Rc<Expr>, paren : &Token, arguments : &Vec<Rc<Expr>>) -> T;
-
+    fn visit_logical_expr(&self, left: Rc<Expr>, operator: &Token, right: Rc<Expr>) -> T;
+    fn visit_call_expr(&self, callee: Rc<Expr>, paren: &Token, arguments: &Vec<Rc<Expr>>) -> T;
 }
 
 pub trait VisitorExpr<T> {
@@ -35,7 +34,6 @@ pub trait VisitorExpr<T> {
     fn visit_assign_expr(&self, expr: Rc<Expr>) -> T;
     fn visit_logical_expr(&self, expr: Rc<Expr>) -> T;
     fn visit_call_expr(&self, expr: Rc<Expr>) -> T;
-
 }
 
 
@@ -66,6 +64,4 @@ impl Expr{
             Self::Call { callee:_, paren:_, arguments:_} => visitor.visit_call_expr(expr),
         }
     }
-
-    
 }

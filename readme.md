@@ -1,8 +1,4 @@
 # rusty_lox
-
-
-
-
 ## Basic information
 ### Author
 Philip Thompson 
@@ -26,9 +22,9 @@ Compilation: Execute `cargo build --release`
 * Execute the executable using `./rusty_lox {filename}` or just `./rusty_lox` for the REPL
 ## Sample runs 
 Two sample run can be found in `SampleRuns`:
-* REPL_Sample.txt
+* `REPL_Sample.txt`
   * Executed on Linux using Bash
-* runfile_example.txt
+* `runfile_example.txt`
   * Executed on Linux using Bash
   * The file that was run is located at `tests/resources/stack/input.lox`
 For more detailed specific testing see the next section.
@@ -51,7 +47,7 @@ I added the the remainder operator("%") to the Lox language. It is identical to 
 ## Citations
 This project is intended to be a direct translation from Crafting Interpreters so most code is similar to code found in the textbook.
 
-There were a couple of times in this process where I was entirely stumped on how to translate some code. At these times I consulted another Rust implementation of this Interpreter found at [UncleScientist/lox-ast](https://github.com/UncleScientist/lox-ast). 
+There were a couple of times in this process where I was entirely stumped on how to translate some code. At these times I consulted another Rust implementation of this interpreter found at [UncleScientist/lox-ast](https://github.com/UncleScientist/lox-ast). 
 
 The following is a brief description of the issues:
 * Environment handling: I ended up mostly taking the exact format. There were two key obstacles that I found quite challenging:
@@ -62,6 +58,6 @@ The following is a brief description of the issues:
 * Resolved expression hashmap storage:
     * I needed a unique identifier to reference each expression so I could look up their resolved distance in the Interpreter. Using the Expr itself, as done in the textbook, was not viable as there are strict trait requirements for Hashmaps: (Eq and Hash. Both are difficult to implement)
     * As it turns out I had a unique ID the whole time: The memory location of the expression. 
-    * This solution was inspired by the [UncleScientist/lox-ast](https://github.com/UncleScientist/lox-ast) but not copied. 
+    * This solution was inspired by the [UncleScientist/lox-ast](https://github.com/UncleScientist/lox-ast), but not copied. 
 
 
