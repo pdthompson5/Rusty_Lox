@@ -22,11 +22,13 @@ mod token;
 
 use crate::scanner::Scanner;
 
+//Effectively the main function of the project
 pub fn entry_point() {
     let mut lox = Lox {
         had_error: false,
         had_runtime_error: false,
         interpreter: Rc::new(Interpreter::new()),
+        //Output to stdout
         output_buffer: &mut io::stdout(),
     };
     lox.main();
@@ -35,6 +37,8 @@ pub struct Lox<'a> {
     pub had_error: bool,
     pub had_runtime_error: bool,
     pub interpreter: Rc<Interpreter>,
+    //Output buffer is the location to which print statements write
+    //Errors are always printed to stdout
     pub output_buffer: &'a mut dyn Write,
 }
 
@@ -97,6 +101,7 @@ impl<'a> Lox<'a> {
                 Err(_e) => break,
             }
 
+            //exit repl
             if line.eq("\n") {
                 break;
             }

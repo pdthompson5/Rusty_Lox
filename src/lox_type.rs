@@ -3,6 +3,8 @@ use std::rc::Rc;
 
 use crate::lox_function::LoxFunction;
 use crate::native_function::NativeFunction;
+
+//This enum represents all possible values in Lox. They must be enumerated as Rust is statically typed.
 #[derive(Clone, PartialEq, Debug)]
 pub enum LoxValue {
     Boolean(bool),
@@ -15,6 +17,7 @@ pub enum LoxValue {
 
 pub fn stringify_double(val: &f64) -> String {
     let string = format!("{}", val);
+    //Trim off trailing zeroes 
     if string.len() > 2 && string[string.len() - 2..string.len() - 1].eq(".0") {
         return string[..string.len() - 2].to_string();
     }
@@ -28,7 +31,6 @@ impl fmt::Display for LoxValue {
             Self::Number(val) => write!(f, "{}", stringify_double(val)),
             Self::LoxString(val) => write!(f, "{}", val),
             Self::Nil => write!(f, "nil"),
-            //Todo: Implment function printing
             Self::Function(func) => write!(f, "{:?}", func),
             Self::Native(func) => write!(f, "{:?}", func),
         }
@@ -37,6 +39,7 @@ impl fmt::Display for LoxValue {
 
 impl LoxValue {
     pub fn is_truthy(&self) -> bool {
+        //Nil is false, Boolean is value, all others are true
         match self {
             Self::Boolean(val) => *val,
             Self::Nil => false,

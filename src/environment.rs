@@ -9,10 +9,6 @@ pub struct Environment {
     pub enclosing: Option<Rc<RefCell<Environment>>>,
 }
 
-//I had to find external sources to learn how to implment the environment.
-//I tried extensivley but the way that the environment is both swapped and contains a muttable reference to the
-//enclosing environment goes deeply agaist the grain of Rust
-
 impl Environment {
     pub fn new() -> Self {
         Environment {
@@ -32,7 +28,7 @@ impl Environment {
         self.values.insert(name, value);
     }
 
-    //For now all variables are passed by value (clone preforms a copy), functions are passed by refference
+    //All variables are passed by value (clone preforms a copy), functions are passed by reference
     pub fn get(&self, name: &Token) -> Result<LoxValue, RuntimeError> {
         match self.values.get(&name.lexeme) {
             Some(val) => Ok(val.clone()),
@@ -52,6 +48,7 @@ impl Environment {
         }
     }
 
+    //get the ancestor enclosing environment at "distance (>0)"
     fn ancestor(&self, distance: usize) -> Rc<RefCell<Environment>> {
         if distance == 1 {
             self.enclosing.as_ref().unwrap().clone()

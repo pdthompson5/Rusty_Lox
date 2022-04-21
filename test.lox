@@ -9,52 +9,10 @@ fun get_stack(){
   var index = 0;
 
   fun stack(instruction){
-    fun pop(){
-      var to_return;
-      if(index == 0){
-        to_return = a0;
-        a0 = nil;
-      }
-      if(index == 1){
-        to_return = a1;
-        a1 = nil;
-      }
-      if(index == 2){
-        to_return = a2;
-        a2 = nil;
-      }
-      if(index == 3){
-        to_return = a3;
-        a3 = nil;
-      }
 
-      if(to_return != nil){
-        index = index -1;
-      }
-      
-      return to_return;
-    }
-    fun push(elm){
-      if(index == 3){
-        print "Error: Stack is full";
-      }
-      index = index + 1;
-      if(index == 0){
-        a0 = elm;
-      }
-      if(index == 1){
-        a1 = elm;
-      }
-      if(index == 2){
-        a2 = elm;
-      }
-      if(index == 3){
-        a3 = elm;
-      }
-    }
     fun peek(){
       if(index == 0){
-        return a0;
+        return a0
       }
       if(index == 1){
         return a1;

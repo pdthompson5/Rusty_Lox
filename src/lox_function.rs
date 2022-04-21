@@ -7,6 +7,8 @@ use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
+
+//This struct represents a function defined in Lox
 #[derive(Clone)]
 pub struct LoxFunction {
     pub arity: u32,
@@ -28,6 +30,7 @@ impl LoxCallable for LoxFunction {
                 params,
                 body,
             } => {
+                //Define parameters 
                 for i in 0..params.len() {
                     environment.define(
                         params.get(i).unwrap().lexeme.clone(),

@@ -13,40 +13,11 @@ use std::io;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub struct RuntimeError {
-    pub message: String,
-    pub line: u32,
-    pub return_value: Option<LoxValue>,
-}
 
-impl RuntimeError {
-    pub fn new(message: String, line: u32) -> Self {
-        RuntimeError {
-            message,
-            line,
-            return_value: None,
-        }
-    }
-
-    pub fn new_token(token: &Token, message: String) -> Self {
-        RuntimeError {
-            message: ["at '", token.lexeme.as_str(), "'", message.as_str()].concat(),
-            line: token.line,
-            return_value: None,
-        }
-    }
-
-    pub fn new_with_return(token: &Token, message: String, return_value: LoxValue) -> Self {
-        RuntimeError {
-            message: ["at '", token.lexeme.as_str(), "'", message.as_str()].concat(),
-            line: token.line,
-            return_value: Some(return_value),
-        }
-    }
-}
 pub struct Interpreter {
-    //This environment handling required massive amounts of indrection.
-    //It is required becuase Rust's borrow checker is strict in that you can only have one mutable reference to a value
+    //This environment handling required massive amounts of indirection.
+    //It is required because Rust's borrow checker is strict in that you can only have one mutable reference to a value
+    //Pattern for handling environment references from: https://github.com/UncleScientist/lox-ast
     pub globals: Rc<RefCell<Environment>>,
     environment: RefCell<Rc<RefCell<Environment>>>,
     locals: RefCell<HashMap<usize, usize>>,
@@ -55,12 +26,11 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        //Pattern for handling environment references from: https://github.com/UncleScientist/lox-ast
-
         let globals = Rc::new(RefCell::new(Environment::new()));
         //Clone used on an Rc creates just another reference to the same data
         let environment = RefCell::new(globals.clone());
 
+        //Native functions:
         fn clock(_arguments: Vec<LoxValue>, _interpreter: &Interpreter) -> LoxValue {
             //Code for clock from https://stackoverflow.com/questions/26593387/how-can-i-get-the-current-time-in-milliseconds
             let start = SystemTime::now();
@@ -71,7 +41,7 @@ impl Interpreter {
         }
 
 
-
+        //define native functions
         globals.borrow_mut().define(
             "clock".to_string(),
             LoxValue::Native(Rc::new(NativeFunction {
@@ -85,6 +55,7 @@ impl Interpreter {
             globals,
             environment,
             locals: RefCell::new(HashMap::new()),
+            //output temporarily stores the result of print statements 
             output: RefCell::new("".to_string()),
         }
     }
@@ -94,9 +65,11 @@ impl Interpreter {
                 Ok(()) => (),
                 Err(error) => return Err(error),
             }
+            //Write to outputs_stream from output String
             output_stream
                 .write(self.output.borrow().as_bytes())
                 .expect("Could not write to provided output buffer.");
+            output_stream.flush().expect("Could not flush to output buffer.");
             self.output.borrow_mut().clear();
         }
         Ok(())
@@ -106,6 +79,7 @@ impl Interpreter {
         stmt.accept(self)
     }
 
+    //This function is called by the Resolver
     pub fn resolve(&self, expr: Rc<Expr>, depth: usize) -> () {
         //Stores the memory location of the expression as a raw usize value.
         //I needed a way to get a unique identifier for each expression.
@@ -117,7 +91,10 @@ impl Interpreter {
     }
 
     pub fn execute_block(&self, statements: &Vec<Rc<Stmt>>, environment : Environment) -> Result<(), RuntimeError>{
-        //When a call goes to execute block it should save the current env
+        //The environment swapping that occurs here is against the grain of Rust.
+        //While we are executing a block we never edit "previous" but the Rust borrow checker can't tell that.
+        //We use the outer RefCell in "self.environment" to work around this. 
+
         let previous = self.environment.replace(Rc::new(RefCell::new(environment)));
 
         for statement in statements {
@@ -140,12 +117,7 @@ impl Interpreter {
         expr.accept(self)
     }
 
-    fn call_function(
-        &self,
-        func: &dyn LoxCallable,
-        arguments: Vec<LoxValue>,
-        paren: &Token,
-    ) -> Result<LoxValue, RuntimeError> {
+    fn call_function(&self, func: &dyn LoxCallable, arguments: Vec<LoxValue>, paren: &Token) -> Result<LoxValue, RuntimeError> {
         if arguments.len() != func.arity() as usize {
             Err(RuntimeError::new_token(
                 paren,
@@ -163,11 +135,8 @@ impl Interpreter {
         }
     }
 
-    fn look_up_variable(
-        &self,
-        name: &Token,
-        expr_pointer_id: usize,
-    ) -> Result<LoxValue, RuntimeError> {
+    //uses expression pointer ID to find the expression resolve distance added to "self.locals" by the Resolver
+    fn look_up_variable(&self, name: &Token, expr_pointer_id: usize) -> Result<LoxValue, RuntimeError> {
         match self.locals.borrow().get(&expr_pointer_id) {
             Some(dist) => self
                 .environment
@@ -184,12 +153,7 @@ fn invalid_operand_number(operator: &Token) -> RuntimeError {
 }
 
 impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter {
-    fn visit_binary_expr(
-        &self,
-        left: Rc<Expr>,
-        operator: &Token,
-        right: Rc<Expr>,
-    ) -> Result<LoxValue, RuntimeError> {
+    fn visit_binary_expr(&self, left: Rc<Expr>, operator: &Token, right: Rc<Expr>) -> Result<LoxValue, RuntimeError> {
         let left_eval = self.evaluate(left)?;
         let right_eval = self.evaluate(right)?;
 
@@ -278,7 +242,7 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter {
                 _ => Err(invalid_operand_number(operator)),
             },
 
-            //LoxValue implements PartialEq so simple equality comparisons work
+            //LoxValue implements PartialEq so simple equality comparisons work for any LoxValue
             EQUAL_EQUAL => Ok(Boolean(left_eval == right_eval)),
             BANG_EQUAL => Ok(Boolean(left_eval != right_eval)),
             _ => Err(RuntimeError::new_token(
@@ -360,6 +324,7 @@ impl expr::Visitor<Result<LoxValue, RuntimeError>> for Interpreter {
                 .borrow()
                 .borrow_mut()
                 .assign_at(*dist, name, &value)?,
+            //If there is no distance it must be a global variable 
             None => self.globals.borrow_mut().assign(name, &value)?,
         }
         Ok(value)
@@ -386,7 +351,7 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
     }
 
     fn visit_var_stmt(&self, name: Token, initializer: Rc<Expr>) -> Result<(), RuntimeError> {
-        //initializer can always be evaluated becuase if it is empty it is a literal nil expression
+        //initializer can always be evaluated because if it is empty it is a literal nil expression
         let value = self.evaluate(initializer)?;
         self.environment
             .borrow()
@@ -420,6 +385,7 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
     }
 
     fn visit_function_stmt(&self, name: Token, params: Vec<Token>, body: Vec<Rc<Stmt>>) -> Result<(), RuntimeError> {
+        //closure is the environment at the time of definition.
         let closure = self.environment.borrow().clone();
         let func = LoxFunction {
             arity: params.len() as u32,
@@ -447,5 +413,38 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
             "Return called outside of function".to_string(),
             value_eval,
         ))
+    }
+}
+
+
+pub struct RuntimeError {
+    pub message: String,
+    pub line: u32,
+    pub return_value: Option<LoxValue>,
+}
+
+impl RuntimeError {
+    pub fn new(message: String, line: u32) -> Self {
+        RuntimeError {
+            message,
+            line,
+            return_value: None,
+        }
+    }
+
+    pub fn new_token(token: &Token, message: String) -> Self {
+        RuntimeError {
+            message: ["at '", token.lexeme.as_str(), "'", message.as_str()].concat(),
+            line: token.line,
+            return_value: None,
+        }
+    }
+
+    pub fn new_with_return(token: &Token, message: String, return_value: LoxValue) -> Self {
+        RuntimeError {
+            message: ["at '", token.lexeme.as_str(), "'", message.as_str()].concat(),
+            line: token.line,
+            return_value: Some(return_value),
+        }
     }
 }

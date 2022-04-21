@@ -1,7 +1,10 @@
 use crate::lox_type::LoxValue;
 use crate::token::Token;
 use std::rc::Rc;
-//Exprs need to be boxed to avoid reccursive enums which Rust does not allow
+
+//This file defines the Expr enum and enables the visitor design pattern for Exprs
+
+//Exprs need to be stored in Rc's to avoid recursive enums which Rust does not allow
 #[derive(PartialEq)]
 pub enum Expr {
     Binary{left: Rc<Expr>, operator: Token, right: Rc<Expr>}, 
@@ -14,6 +17,9 @@ pub enum Expr {
     Call{callee: Rc<Expr>, paren: Token, arguments: Vec<Rc<Expr>>}
 }
 
+
+//This trait should be implemented if the visitor seeks to use the values that Expr stores
+//Using this trait avoids needing to match and unwrap all of the enum values
 pub trait Visitor<T> {
     fn visit_binary_expr(&self, left: Rc<Expr>, operator: &Token, right: Rc<Expr>) -> T;
     fn visit_grouping_expr(&self, expression: Rc<Expr>) -> T;
@@ -25,6 +31,8 @@ pub trait Visitor<T> {
     fn visit_call_expr(&self, callee: Rc<Expr>, paren: &Token, arguments: &Vec<Rc<Expr>>) -> T;
 }
 
+//This trait should be implemented if the visitor seeks to use the a reference to the Expr itself
+//This is used in the resolver as it was designed in the textbook to pass around Exprs in its functions
 pub trait VisitorExpr<T> {
     fn visit_binary_expr(&self, expr: Rc<Expr>) -> T;
     fn visit_grouping_expr(&self, expr: Rc<Expr>) -> T;

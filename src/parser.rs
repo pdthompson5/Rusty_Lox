@@ -6,6 +6,7 @@ use std::rc::Rc;
 pub struct Parser<'a> {
     tokens: &'a Vec<Token>,
     current: u32,
+    had_error: bool
 }
 
 impl<'a> Parser<'a> {
@@ -13,20 +14,20 @@ impl<'a> Parser<'a> {
         Parser {
             tokens: tokens,
             current: 0,
+            had_error: false
         }
     }
 
     pub fn parse(&mut self) -> Result<Vec<Rc<Stmt>>, ()> {
         let mut statements: Vec<Rc<Stmt>> = vec![];
-        let mut had_error = false;
         while !self.is_at_end() {
             match self.declaration() {
                 Ok(statement) => statements.push(statement),
-                Err(()) => had_error = true,
+                Err(()) => self.had_error = true,
             };
         }
 
-        if had_error {
+        if self.had_error {
             Err(())
         } else {
             Ok(statements)
@@ -46,9 +47,11 @@ impl<'a> Parser<'a> {
 
         match statement {
             Ok(stmt) => Ok(stmt),
-            Err(()) => {
-                self.synchronize();
-                Err(())
+            Err(()) =>{ 
+                self.synchronize();     
+                self.had_error = true;
+                //Return nil statement in order to reset error propagation to avoid continuous synchronization 
+                Ok(Rc::new(Stmt::Expression { expression: Rc::new(Expr::Literal { value: LoxValue::Nil }) }))
             }
         }
     }
@@ -565,6 +568,7 @@ impl<'a> Parser<'a> {
     pub fn synchronize(&mut self) {
         self.advance();
 
+
         while !self.is_at_end() {
             if self.previous().kind == SEMICOLON {
                 return;
@@ -574,6 +578,7 @@ impl<'a> Parser<'a> {
                 CLASS | FUN | VAR | FOR | IF | WHILE | PRINT | RETURN => return,
                 _ => (),
             }
+            
 
             self.advance();
         }

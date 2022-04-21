@@ -11,7 +11,8 @@ pub enum Stmt {
     Return{keyword: Token, value: Rc<Expr>}
     
 }
-
+//This trait should be implemented if the visitor seeks to use the values that Stmt stores
+//Using this trait avoids needing to match and unwrap all of the enum values
 pub trait Visitor<T> {
     fn visit_expression_stmt(&self, expression: Rc<Expr>) -> T;
     fn visit_print_stmt(&self, expression: Rc<Expr>) -> T;
@@ -22,7 +23,8 @@ pub trait Visitor<T> {
     fn visit_function_stmt(&self, name: Token, params: Vec<Token>, body: Vec<Rc<Stmt>>) -> T;
     fn visit_return_stmt(&self, keyword: Token, value: Rc<Expr>) -> T;
 }
-
+//This trait should be implemented if the visitor seeks to use the a reference to the Stmt itself
+//This is used in the resolver as it was designed in the textbook to pass around Stmts in its functions
 pub trait VisitorStmt<T> {
     fn visit_expression_stmt(&self, statement: Rc<Stmt>) -> T;
     fn visit_print_stmt(&self, statement: Rc<Stmt>) -> T;

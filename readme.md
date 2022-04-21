@@ -39,7 +39,7 @@ Most tests determine that a specific language feature works. The tests `fibonacc
 
 
 ## Error reporting 
-I have attempted to directly translate the error reporting in the textbook. I have not thoroughly tested this aspect of the interpreter, but it seems to work well. 
+I have attempted to directly translate the error reporting in the textbook. I have not thoroughly tested this aspect of the interpreter, but it seems to work well. There is a known issue in the parser where errors are over-reported when there is at least on error, but the first error reported is always accurate. 
 
 ## Language Extensions
 I added the the remainder operator("%") to the Lox language. It is identical to the remainder operator in Rust. I added this operation to enable the `prime_factorization` test.   
