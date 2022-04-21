@@ -16,6 +16,7 @@ This project requires only Rust(tested on rustc v1.59.0) and the cargo package m
 Development Run Instructions:
 * REPL: Simply execute `cargo run`.
 * Run file: `cargo run -- {filename}` replacing `filename` with the appropriate file in the root directory.
+  * or write you code in `test.lox` and enter `make rusty_lox`
 
 Compilation: Execute `cargo build --release`
 * This constructs the optimized executable located at `target/release/rusty_lox` 
