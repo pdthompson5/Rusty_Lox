@@ -39,7 +39,24 @@ Most tests determine that a specific language feature works. The tests `fibonacc
 
 
 ## Error reporting 
-I have attempted to directly translate the error reporting in the textbook. I have not thoroughly tested this aspect of the interpreter, but it seems to work well. There is a known issue in the parser where errors are over-reported when there is at least on error, but the first error reported is always accurate. 
+I have attempted to directly translate the error reporting in the textbook. I have not thoroughly tested this aspect of the interpreter, but it seems to work well. There is a known issue in the parser where errors are over-reported, but the first error reported is always accurate. This issue seems to be present in the Jlox interpreter in the textbook. The following pattern causes the error:
+
+```
+fun foo(){
+  if(true){
+    return false
+  }
+}
+```
+Output:
+```
+[line 4] Error at '}': Expect ';' after return value.
+[line 8] Error at end: Expect '}' after block.
+[line 8] Error at end: Expect '}' after block.
+```
+
+Only the first error is accurate. The closing brackets get consumed by the synchronize function before they can be consumed by the fun block and if block.
+
 
 ## Language Extensions
 I added the the remainder operator("%") to the Lox language. It is identical to the remainder operator in Rust. I added this operation to enable the `prime_factorization` test.   

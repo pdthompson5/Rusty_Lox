@@ -80,7 +80,7 @@ impl Scanner {
             ';' => self.add_token_null(SEMICOLON),
             '*' => self.add_token_null(STAR),
             '%' => self.add_token_null(PERCENTAGE),
-            //Begin multi character options
+            //Multi character options
             '!' => {
                 if self.match_char('=') {
                     self.add_token_null(BANG_EQUAL)
@@ -118,6 +118,8 @@ impl Scanner {
                     self.add_token_null(SLASH)
                 }
             }
+
+            //Ignore most whitespace
             ' ' => (),
             '\r' => (),
             '\t' => (),
@@ -150,6 +152,7 @@ impl Scanner {
         c
     }
 
+    //Add token if literal doesn't matter
     fn add_token_null(&mut self, kind: TokenType) {
         self.add_token(kind, LoxValue::Nil);
     }
@@ -161,13 +164,14 @@ impl Scanner {
 
     fn match_char(&mut self, expected: char) -> bool {
         if self.is_at_end() {
-            return false;
+            false
         }
-        if self.get_current_char() != expected {
-            return false;
+        else if self.get_current_char() != expected {
+            false
+        } else {
+            self.current += 1;
+            true
         }
-        self.current += 1;
-        true
     }
 
     fn peek(&self) -> char {
@@ -181,14 +185,17 @@ impl Scanner {
         if self.current + 1 >= self.source.len() {
             return '\0';
         }
+        
         self.source.as_bytes()[(self.current + 1) as usize] as char
     }
 
     fn get_current_char(&self) -> char {
+        //Due to this access only single byte encoded characters can be used 
         self.source.as_bytes()[self.current as usize] as char
     }
 
     fn add_string(&mut self) {
+        //Read until closing " is found 
         while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {
                 self.line += 1;

@@ -276,7 +276,8 @@ impl<'a> Parser<'a> {
     
         let mut params = vec![];
         if !self.check(RIGHT_PAREN) {
-            //The following is a do-while loop
+            //This is a strange way to emulate a do-while loop from: https://gist.github.com/huonw/8435502
+            //It works because the conditional of a while loop can be any expression, including a block expression
             while {
                 if params.len() >= 255 {
                     crate::error_token(
@@ -447,8 +448,7 @@ impl<'a> Parser<'a> {
     fn finish_call(&mut self, callee: Rc<Expr>) -> Result<Rc<Expr>, ()> {
         let mut arguments = vec![];
         if !self.check(RIGHT_PAREN) {
-            //This is a strange way to emulate a do-while loop from: https://gist.github.com/huonw/8435502
-            //It works because the conditional of a while loop can be any expression, including a block expression
+            //The following is a do-while loop
             while {
                 arguments.push(self.expression()?);
                 if arguments.len() >= 255 {
@@ -565,17 +565,16 @@ impl<'a> Parser<'a> {
         }
     }
 
+    //See error reporting in readme for a discussion on issues with this function 
     pub fn synchronize(&mut self) {
         self.advance();
-
-
         while !self.is_at_end() {
             if self.previous().kind == SEMICOLON {
                 return;
             }
 
             match self.peek().kind {
-                CLASS | FUN | VAR | FOR | IF | WHILE | PRINT | RETURN => return,
+                CLASS | FUN | VAR | FOR | IF | WHILE | PRINT | RETURN =>  return,
                 _ => (),
             }
             

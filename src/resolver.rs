@@ -48,7 +48,7 @@ impl Resolver {
             return Ok(());
         }
         let last_scope_index = self.last_scope_index();
-        //Aka: If name is in scope 
+        //If name is in scope -> Error
         if self
             .scopes
             .borrow()
@@ -61,6 +61,7 @@ impl Resolver {
                 "Already a variable with this name in this scope".to_string(),
             ));
         }
+        //Insert name into current scope
         self.scopes
             .borrow_mut()
             .get_mut(last_scope_index)
@@ -85,6 +86,7 @@ impl Resolver {
         self.scopes.borrow().is_empty()
     }
 
+    //Helper function to reduce long scope access function chaining
     fn last_scope_index(&self) -> usize {
         self.scopes.borrow().len() - 1
     }
@@ -98,17 +100,14 @@ impl Resolver {
                 .unwrap()
                 .contains_key(&name.lexeme)
             {
+                //Add resolved expression to the Interpreter's hashmap 
                 self.interpreter.resolve(expr, self.last_scope_index() - i);
                 return;
             }
         }
     }
 
-    fn resolve_function(
-        &self,
-        params: &Vec<Token>,
-        body: &Vec<Rc<Stmt>>,
-    ) -> Result<(), RuntimeError> {
+    fn resolve_function(&self, params: &Vec<Token>, body: &Vec<Rc<Stmt>>) -> Result<(), RuntimeError> {
         self.begin_scope();
         for param in params {
             self.declare(param)?;
@@ -170,6 +169,7 @@ impl expr::VisitorExpr<Result<(), RuntimeError>> for Resolver {
         };
 
         if !self.scopes_is_empty() {
+            //Check if variable is used in it's own initializer 
             match self
                 .scopes
                 .borrow()
